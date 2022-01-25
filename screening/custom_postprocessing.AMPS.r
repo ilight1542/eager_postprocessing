@@ -108,7 +108,7 @@ plot.readDisTable5 <- function(id,tax,folder){
     ds <- read.table(paste(folder,'filterInformation/',id,'_filterTable.txt',sep=''),header=T,row.names=1,check.names=F,stringsAsFactors=F,comment.char='')
     ds <- ds[tax, "turnedOn?"]
     ## join output and plot table
-    data <- c(topNode,rd[topNode,'Reference'],rd[topNode,'TotalAlignmentsOnReference'],rd[topNode,'nonDuplicatesonReference'], #rd[topNode,'uniquePerReference']## THIS IS WHAT I WANT,rd[topNode,'nonStacked'],ds,round(dam[topNode,'C>T_1'],4),round(dam[topNode,'G>A_20'],4),ld)
+    data <- c(topNode,rd[topNode,'Reference'],rd[topNode,'TotalAlignmentsOnReference'],rd[topNode,'nonDuplicatesonReference'], rd[topNode,'uniquePerReference'],rd[topNode,'nonStacked'],ds,round(dam[topNode,'C>T_1'],4),round(dam[topNode,'G>A_20'],4),ld)
     data <- cbind( c('Node','Top Reference','all reads','nonDup','readDis','nonStacked','destacking?','C>T_1','G>A_-1','mean length (sd)'), data)
     colnames(data)=NULL; rownames(data)=NULL
     plot.new()
@@ -198,7 +198,7 @@ data[, c(4:9,11:16) ] = apply(data[ , c(4:9,11:16)], 2, function(x) as.numeric(a
 #############
 if(length(maltex.mode) == 2){
     ## Default-Ancient
-    trg1 <- data[ data[,'def.dr4'] >= defratio & !is.na(data[,'def.dr4']) & data[,'def.rd'] > readdistcutoff, ] ## Step1: DiffRatio0-4: > defratio (default = 0.9) and 
+    trg1 <- data[ data[,'def.dr4'] >= defratio & !is.na(data[,'def.dr4']) & data[,'def.rd'] > readdistcutoff, ] ## Step1: DiffRatio0-4: > defratio (default = 0.9) and read distribution > cutoff (default = 0)
     trg2 <- data[ data[,'def.mapDam'] > dmgcutoff & !is.na(data[,'def.mapDam']) & data[,'def.rd'] > readdistcutoff, ] ## Step2: Terminal Damage Present (default = 0)
     trg3 <- data[ data[,'anc.dr4'] > ancratio & !is.na(data[,'anc.dr4']) & data[,'def.rd'] > readdistcutoff, ] ## Step3: DiffRatio1-4: > ancratio (default = 0.8)
 
