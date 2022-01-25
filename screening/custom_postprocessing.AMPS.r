@@ -108,7 +108,7 @@ plot.readDisTable5 <- function(id,tax,folder){
     ds <- read.table(paste(folder,'filterInformation/',id,'_filterTable.txt',sep=''),header=T,row.names=1,check.names=F,stringsAsFactors=F,comment.char='')
     ds <- ds[tax, "turnedOn?"]
     ## join output and plot table
-    data <- c(topNode,rd[topNode,'Reference'],rd[topNode,'TotalAlignmentsOnReference'],rd[topNode,'nonDuplicatesonReference'], rd[topNode,'uniquePerReference'],rd[topNode,'nonStacked'],ds,round(dam[topNode,'C>T_1'],4),round(dam[topNode,'G>A_20'],4),ld)
+    data <- c(topNode,rd[topNode,'Reference'],rd[topNode,'TotalAlignmentsOnReference'],rd[topNode,'nonDuplicatesonReference'],rd[topNode,'uniquePerReference'],rd[topNode,'nonStacked'],ds,round(dam[topNode,'C>T_1'],4),round(dam[topNode,'G>A_20'],4),ld)
     data <- cbind( c('Node','Top Reference','all reads','nonDup','readDis','nonStacked','destacking?','C>T_1','G>A_-1','mean length (sd)'), data)
     colnames(data)=NULL; rownames(data)=NULL
     plot.new()
