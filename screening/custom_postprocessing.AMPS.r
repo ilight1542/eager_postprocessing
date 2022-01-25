@@ -3,14 +3,14 @@ library(getopt); # for args parsing
 library(parallel); # sumstat calculation is parallized across libraries
 
 ## FUNCTIONs
-extract.stats5 <- function(id , path, malt.mode){
+extract.stats5 <- function(id,path,malt.mode){
     ind <- id
     out <- list()
     for (run in malt.mode){
-        ed.dis <- read.table(paste( path,run,'/editDistance/',ind ,'_editDistance.txt', sep="" ),header=F,sep="\t",skip=1,row.names=1,comment.char='')[,1:6] # keep relevant columns only
+        ed.dis <- read.table(paste(path,run,'/editDistance/',ind,'_editDistance.txt',sep=""),header=F,sep="\t",skip=1,row.names=1,comment.char='')[,1:6] # keep relevant columns only
         colnames(ed.dis) <- c('0','1','2','3','4','5') # R does not like reading numeric header's
-        mp.dam <- read.table(paste( path,run,'/damageMismatch/',ind ,'_damageMismatch.txt', sep="" ),header=T,sep="\t",row.names=1,check.names=F,comment.char='')
-        rd.dis <- read.table(paste( path,'default','/readDist/',ind ,'_alignmentDist.txt', sep="" ),header=T,sep="\t",row.names=1,check.names=F,comment.char='')
+        mp.dam <- read.table(paste(path,run,'/damageMismatch/',ind,'_damageMismatch.txt',sep="" ),header=T,sep="\t",row.names=1,check.names=F,comment.char='')
+        rd.dis <- read.table(paste(path,'default','/readDist/',ind,'_alignmentDist.txt',sep="" ),header=T,sep="\t",row.names=1,check.names=F,comment.char='')
         if( run == 'ancient' ){ rhoNM <- 2:6 ;keptDiff <- 1:2} else { rhoNM <- 1:6; keptDiff <- 1:3}
         for ( spec in unq.spec ){
             ## spec <- 'Yersinia_pestis'
