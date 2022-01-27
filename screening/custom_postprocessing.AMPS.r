@@ -3,7 +3,7 @@ library(getopt); # for args parsing
 library(parallel); # sumstat calculation is parallized across libraries
 
 ## FUNCTIONs
-extract.stats5 <- function(id,path,malt.mode){
+extract.stats5 <- function(id,path,malt.mode,paried_end_mode){
     ind <- id
     out <- list()
     for (run in malt.mode){
@@ -36,16 +36,19 @@ extract.stats5 <- function(id,path,malt.mode){
                 top.dr <- rep(NA,5)
             }
             ## extract map.damage:sum(C>T or G>A pos 1 2 (-1 -2 respectively)) for TopScorer@EdDis
-             mp.dam.spec.max <- max(mp.dam.spec[ rowMax ,"C>T_1"] , mp.dam.spec[ rowMax ,"C>T_2"] , mp.dam.spec[ rowMax ,"G>A_20"], mp.dam.spec[ rowMax ,"G>A_19"])
-            ## extract map.damage on first and last bases for TopScorer@EdDis
-             mp.dam.spec.first_base <- mp.dam.spec[ rowMax ,"C>T_1"] 
-             mp.dam.spec.last_base <- mp.dam.spec[ rowMax ,"G>A_20"]
+            # if paired end: value def.mapDam and anc.mapDam have propotion of reads with damage at first index of 3' end or last base of 5' end, depending on which is higher
+            # if single end: value def.mapDam and anc.mapDam have propotion of reads with damage at first index of 3'
+            if (paried_end_mode) {
+             mp.dam.spec.max <- max(mp.dam.spec[ rowMax ,"C>T_1"] , mp.dam.spec[ rowMax ,"G>A_20"])
+            } else {
+             mp.dam.spec.max <- mp.dam.spec[ rowMax ,"C>T_1"]                
+            }
             ## extract max readDis:uniquePerReference for TopScorer@EdDis
             read.dis.uniq <- rd.dis.spec[ rowMax ,'uniquePerReference']
             if(length(read.dis.uniq) == 0){ read.dis.uniq <- NA }
             ## write results list
             if( paste(ind,spec,sep="_") %in% names(out) ){
-                out[[ paste(ind,spec,sep="_") ]] <- c( out[[ paste(ind,spec,sep="_") ]] , top.dr , mp.dam.spec.max , read.dis.uniq , mp.dam.spec.first_base , mp.dam.spec.last_base)
+                out[[ paste(ind,spec,sep="_") ]] <- c( out[[ paste(ind,spec,sep="_") ]] , top.dr , mp.dam.spec.max , read.dis.uniq )
             } else {
                 out[[ paste(ind,spec,sep="_") ]] <- c( ind , spec , top.dr , mp.dam.spec.max , read.dis.uniq )
             }
@@ -53,9 +56,9 @@ extract.stats5 <- function(id,path,malt.mode){
     }
     out2 <- do.call(rbind,out)
     if(length(malt.mode)==2){
-        colnames(out2) <- c('id','spec','def.node','def.dr6','def.n6','def.dr4','def.n4','def.mapDam','def.rd', 'def.mapDam.first_base', 'def.mapDam.last_base','anc.node','anc.dr6','anc.n6','anc.dr4','anc.n4','anc.mapDam','anc.rd', 'anc.mapDam.first_base', 'anc.mapDam.last_base')
+        colnames(out2) <- c('id','spec','def.node','def.dr6','def.n6','def.dr4','def.n4','def.mapDam','def.rd','anc.node','anc.dr6','anc.n6','anc.dr4','anc.n4','anc.mapDam','anc.rd')
         } else {
-            colnames(out2) <- c('id','spec','def.node','def.dr6','def.n6','def.dr4','def.n4','def.mapDam','def.rd', 'def.mapDam.first_base', 'def.mapDam.last_base')
+            colnames(out2) <- c('id','spec','def.node','def.dr6','def.n6','def.dr4','def.n4','def.mapDam','def.rd')
         }
     return(out2)
 }
@@ -153,6 +156,7 @@ spec = matrix(c(
     "maltex.filter",  "m" , 2, "character", "MALTextract filter mode: <default,def_anc>. This script is not designed for 'scan' output. Default: <def_anc>.",
     "threads",  "t" , 1, "integer", "Max number of cores used.",
     "help"    ,  "h" , 0, "logical", "Print this help.",
+    "paried_end_mode", "p", 0, "logical", "Runs in paired_end_mode for needing damage on either forward or reverse overhang for flagging",
     "node.list"   ,  "n" , 1, "character","List (\\n separated) of nodes to be reported on (aka input species/node list used for MALTextract).",
     "heatmap.json"   ,  "j", 2, "logical", "Optional exporting of heatmap data in json format.",
     "dmgcutoff" ,   "d" ,   2,  "double",  "Cutoff threshold for 3 prime damage for outputting plot. Default: 0, no cutoff is used",
@@ -172,12 +176,21 @@ if ( !is.null(opt$help) ) {
 ### ARG parsing and sanity checks
 ## assign args and modify node.vec (tr ' ' '_')
 path <- opt$rmaex.out.fld
-if (substr(path,nchar(path),nchar(path)) != "/"){path <- paste(path ,"/",sep="")} # add trailing "/" if missing
-if (opt$maltex.filter == 'default') {maltex.mode <- 'default'} else {maltex.mode <- c('default','ancient')}
+if ( substr(path,nchar(path),nchar(path)) != "/"){path <- paste(path ,"/",sep="")} # add trailing "/" if missing
+## parsing maltex filter and return update about what is being used
+if ( is.null(opt$maltex.filter) {maltex.mode <- c('default','ancient');
+    print("No filter type provided, using default malt filter mode <def_anc>")} 
+    else if (opt$maltex.filter == 'def_anc') {maltex.mode <- c('default','ancient')}
+    else if (opt$maltex.filter == 'default') {maltex.mode <- 'default'}
+    else {maltex.mode <- c('default','ancient');
+        print('Non standard malt filter mode provided, defaulting to <def_anc>')} 
 if ( !is.null(opt$dmgcutoff) ) {dmgcutoff <- opt$dmgcutoff} else {dmgcutoff <- 0} 
 if ( !is.null(opt$readdistcutoff) ) {readdistcutoff <- opt$readdistcutoff} else {readdistcutoff <- 0}
 if ( !is.null(opt$defratio) ) {defratio <- opt$defratio} else {defratio <- 0.9}
 if ( !is.null(opt$ancratio) ) {ancratio <- opt$ancratio} else {ancratio <- 0.8}
+if ( !is.null(opt$paired_end_mode) ) {
+    paired_end_mode <- TRUE
+} else { paired_end_mode <- FALSE }
 
 ## check if custom filtering values are acceptable
 if (dmgcutoff < 0 || dmgcutoff > 1) {stop("damage cutoff value should be within range of [0,1]")}
@@ -191,7 +204,7 @@ unq.spec <- unique(gsub(" ","_",scan(file=opt$node,sep="\n",what='character'))) 
 all.inds <- colnames(as.matrix(read.table(paste(path,'/default/RunSummary.txt',sep=''),sep="\t",header=T,stringsAsFactors=F,row.names=1,check.names=FALSE,comment.char='')))
 
 ### Extract MetaData for all Sample-Species Pairs
-out.lists <- mclapply(1:length(all.inds), function(j) extract.stats5( all.inds[j],path,maltex.mode ), mc.cores=opt$threads )
+out.lists <- mclapply(1:length(all.inds), function(j) extract.stats5( all.inds[j],path,maltex.mode,paired_end_mode ), mc.cores=opt$threads )
 data <- do.call(rbind, out.lists)
 data <- data.frame(data,stringsAsFactors=F)
 data[, c(4:9,11:16) ] = apply(data[ , c(4:9,11:16)], 2, function(x) as.numeric(as.character(x)))
@@ -202,7 +215,7 @@ data[, c(4:9,11:16) ] = apply(data[ , c(4:9,11:16)], 2, function(x) as.numeric(a
 if(length(maltex.mode) == 2){
     ## Default-Ancient
     trg1 <- data[ data[,'def.dr4'] >= defratio & !is.na(data[,'def.dr4']) & data[,'def.rd'] > readdistcutoff, ] ## Step1: DiffRatio0-4: > defratio (default = 0.9) and read distribution > cutoff (default = 0)
-    trg2 <- data[ data[,'def.mapDam.first_base'] > dmgcutoff & !is.na(data[,'def.mapDam.first_base']) & data[,'def.rd'] > readdistcutoff, ] ## Step2: Terminal Damage Present (default = 0) #TODO: fix mapDam cutoff, currently it is ANY position has > cutoff, need first position #maybe C>T_1
+    trg2 <- data[ data[,'def.mapDam'] > dmgcutoff & !is.na(data[,'def.mapDam']) & data[,'def.rd'] > readdistcutoff, ] ## Step2: Terminal Damage Present (default = 0) #TODO: fix mapDam cutoff, currently it is ANY position has > cutoff, need first position #maybe C>T_1
     trg3 <- data[ data[,'anc.dr4'] > ancratio & !is.na(data[,'anc.dr4']) & data[,'def.rd'] > readdistcutoff, ] ## Step3: DiffRatio1-4: > ancratio (default = 0.8)
 
     # Build Matrix for Heatmap
