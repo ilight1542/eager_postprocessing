@@ -178,19 +178,15 @@ if ( !is.null(opt$help) ) {
 path <- opt$rmaex.out.fld
 if ( substr(path,nchar(path),nchar(path)) != "/"){path <- paste(path ,"/",sep="")} # add trailing "/" if missing
 ## parsing maltex filter and return update about what is being used
-if ( is.null(opt$maltex.filter) ) {maltex.mode <- c('default','ancient');
-    print("No filter type provided, using default malt filter mode <def_anc>")} 
-    else if (opt$maltex.filter == 'def_anc') {maltex.mode <- c('default','ancient')}
-    else if (opt$maltex.filter == 'default') {maltex.mode <- 'default'}
-    else {maltex.mode <- c('default','ancient');
-        print('Non standard malt filter mode provided, defaulting to <def_anc>')} 
+if ( is.null(opt$maltex.filter) ) {maltex.mode <- c('default','ancient'); print("No filter type provided, using default malt filter mode <def_anc>") 
+} else if (opt$maltex.filter == 'def_anc') {maltex.mode <- c('default','ancient')
+} else if (opt$maltex.filter == 'default') {maltex.mode <- 'default'
+} else {maltex.mode <- c('default','ancient'); print('Non standard malt filter mode provided, defaulting to <def_anc>')} 
 if ( !is.null(opt$dmgcutoff) ) {dmgcutoff <- opt$dmgcutoff} else {dmgcutoff <- 0} 
 if ( !is.null(opt$readdistcutoff) ) {readdistcutoff <- opt$readdistcutoff} else {readdistcutoff <- 0}
 if ( !is.null(opt$defratio) ) {defratio <- opt$defratio} else {defratio <- 0.9}
 if ( !is.null(opt$ancratio) ) {ancratio <- opt$ancratio} else {ancratio <- 0.8}
-if ( !is.null(opt$paired_end_mode) ) {
-    paired_end_mode <- TRUE
-} else { paired_end_mode <- FALSE }
+if ( !is.null(opt$paired_end_mode) ) {paired_end_mode <- TRUE} else { paired_end_mode <- FALSE }
 
 ## check if custom filtering values are acceptable
 if (dmgcutoff < 0 || dmgcutoff > 1) {stop("damage cutoff value should be within range of [0,1]")}
