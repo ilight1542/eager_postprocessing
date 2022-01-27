@@ -199,7 +199,7 @@ data[, c(4:9,11:16) ] = apply(data[ , c(4:9,11:16)], 2, function(x) as.numeric(a
 if(length(maltex.mode) == 2){
     ## Default-Ancient
     trg1 <- data[ data[,'def.dr4'] >= defratio & !is.na(data[,'def.dr4']) & data[,'def.rd'] > readdistcutoff, ] ## Step1: DiffRatio0-4: > defratio (default = 0.9) and read distribution > cutoff (default = 0)
-    trg2 <- data[ data[,'def.mapDam'] > dmgcutoff & !is.na(data[,'def.mapDam']) & data[,'def.rd'] > readdistcutoff, ] ## Step2: Terminal Damage Present (default = 0)
+    trg2 <- data[ data[,'C>T_1'] > dmgcutoff & !is.na(data[,'C>T_1']) & data[,'def.rd'] > readdistcutoff, ] ## Step2: Terminal Damage Present (default = 0) #TODO: fix mapDam cutoff, currently it is ANY position has > cutoff, need first position #maybe C>T_1
     trg3 <- data[ data[,'anc.dr4'] > ancratio & !is.na(data[,'anc.dr4']) & data[,'def.rd'] > readdistcutoff, ] ## Step3: DiffRatio1-4: > ancratio (default = 0.8)
 
     # Build Matrix for Heatmap
