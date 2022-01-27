@@ -178,7 +178,7 @@ if ( !is.null(opt$help) ) {
 path <- opt$rmaex.out.fld
 if ( substr(path,nchar(path),nchar(path)) != "/"){path <- paste(path ,"/",sep="")} # add trailing "/" if missing
 ## parsing maltex filter and return update about what is being used
-if ( is.null(opt$maltex.filter) {maltex.mode <- c('default','ancient');
+if ( is.null(opt$maltex.filter) ) {maltex.mode <- c('default','ancient');
     print("No filter type provided, using default malt filter mode <def_anc>")} 
     else if (opt$maltex.filter == 'def_anc') {maltex.mode <- c('default','ancient')}
     else if (opt$maltex.filter == 'default') {maltex.mode <- 'default'}
