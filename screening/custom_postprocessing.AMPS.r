@@ -37,12 +37,15 @@ extract.stats5 <- function(id,path,malt.mode){
             }
             ## extract map.damage:sum(C>T or G>A pos 1 2 (-1 -2 respectively)) for TopScorer@EdDis
              mp.dam.spec.max <- max(mp.dam.spec[ rowMax ,"C>T_1"] , mp.dam.spec[ rowMax ,"C>T_2"] , mp.dam.spec[ rowMax ,"G>A_20"], mp.dam.spec[ rowMax ,"G>A_19"])
+            ## extract map.damage on first and last bases for TopScorer@EdDis
+             mp.dam.spec.first_base <- mp.dam.spec[ rowMax ,"C>T_1"] 
+             mp.dam.spec.last_base <- mp.dam.spec[ rowMax ,"G>A_20"]
             ## extract max readDis:uniquePerReference for TopScorer@EdDis
             read.dis.uniq <- rd.dis.spec[ rowMax ,'uniquePerReference']
             if(length(read.dis.uniq) == 0){ read.dis.uniq <- NA }
             ## write results list
             if( paste(ind,spec,sep="_") %in% names(out) ){
-                out[[ paste(ind,spec,sep="_") ]] <- c( out[[ paste(ind,spec,sep="_") ]] , top.dr , mp.dam.spec.max , read.dis.uniq )
+                out[[ paste(ind,spec,sep="_") ]] <- c( out[[ paste(ind,spec,sep="_") ]] , top.dr , mp.dam.spec.max , read.dis.uniq , mp.dam.spec.first_base , mp.dam.spec.last_base)
             } else {
                 out[[ paste(ind,spec,sep="_") ]] <- c( ind , spec , top.dr , mp.dam.spec.max , read.dis.uniq )
             }
@@ -50,9 +53,9 @@ extract.stats5 <- function(id,path,malt.mode){
     }
     out2 <- do.call(rbind,out)
     if(length(malt.mode)==2){
-        colnames(out2) <- c('id','spec','def.node','def.dr6','def.n6','def.dr4','def.n4','def.mapDam','def.rd','anc.node','anc.dr6','anc.n6','anc.dr4','anc.n4','anc.mapDam','anc.rd')
+        colnames(out2) <- c('id','spec','def.node','def.dr6','def.n6','def.dr4','def.n4','def.mapDam','def.rd', 'def.mapDam.first_base', 'def.mapDam.last_base','anc.node','anc.dr6','anc.n6','anc.dr4','anc.n4','anc.mapDam','anc.rd', 'anc.mapDam.first_base', 'anc.mapDam.last_base')
         } else {
-            colnames(out2) <- c('id','spec','def.node','def.dr6','def.n6','def.dr4','def.n4','def.mapDam','def.rd')
+            colnames(out2) <- c('id','spec','def.node','def.dr6','def.n6','def.dr4','def.n4','def.mapDam','def.rd', 'def.mapDam.first_base', 'def.mapDam.last_base')
         }
     return(out2)
 }
@@ -199,7 +202,7 @@ data[, c(4:9,11:16) ] = apply(data[ , c(4:9,11:16)], 2, function(x) as.numeric(a
 if(length(maltex.mode) == 2){
     ## Default-Ancient
     trg1 <- data[ data[,'def.dr4'] >= defratio & !is.na(data[,'def.dr4']) & data[,'def.rd'] > readdistcutoff, ] ## Step1: DiffRatio0-4: > defratio (default = 0.9) and read distribution > cutoff (default = 0)
-    trg2 <- data[ data[,'C>T_1'] > dmgcutoff & !is.na(data[,'C>T_1']) & data[,'def.rd'] > readdistcutoff, ] ## Step2: Terminal Damage Present (default = 0) #TODO: fix mapDam cutoff, currently it is ANY position has > cutoff, need first position #maybe C>T_1
+    trg2 <- data[ data[,'def.mapDam.first_base'] > dmgcutoff & !is.na(data[,'def.mapDam.first_base']) & data[,'def.rd'] > readdistcutoff, ] ## Step2: Terminal Damage Present (default = 0) #TODO: fix mapDam cutoff, currently it is ANY position has > cutoff, need first position #maybe C>T_1
     trg3 <- data[ data[,'anc.dr4'] > ancratio & !is.na(data[,'anc.dr4']) & data[,'def.rd'] > readdistcutoff, ] ## Step3: DiffRatio1-4: > ancratio (default = 0.8)
 
     # Build Matrix for Heatmap
