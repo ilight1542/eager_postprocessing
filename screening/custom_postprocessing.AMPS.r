@@ -148,14 +148,14 @@ table.additionalNodeEntries1 <- function(id,tax,folder){
 spec = matrix(c(
     "rmaex.out.fld",  "r" , 1, "character", "MALTextract output folder.",
     "maltex.filter",  "m" , 2, "character", "MALTextract filter mode: <default,def_anc>. This script is not designed for 'scan' output. Default: <def_anc>.",
-    "threads",  "t" , 1, "numeric", "Max number of cores used.",
+    "threads",  "t" , 1, "integer", "Max number of cores used.",
     "help"    ,  "h" , 0, "logical", "Print this help.",
     "node.list"   ,  "n" , 1, "character","List (\\n separated) of nodes to be reported on (aka input species/node list used for MALTextract).",
     "heatmap.json"   ,  "j", 2, "logical", "Optional exporting of heatmap data in json format.",
-    "dmgcutoff" ,   "d" ,   2,  "numeric",  "Cutoff threshold for 3 prime damage for outputting plot. Default: 0, no cutoff is used",
-    "readdistcutoff","rd", 2,  "numeric",  "Cutoff threshold for read distribution (stacking) for outputting plot. Default: 0, no cutoff is used",
-    "defratio"  ,   "dr", 2, "numeric", "Absolute value sums of edit distances of ratio between successive bars of default edit distance needed to exceed for outputting plot, lower value is more permissive. Default: 0.9",
-    "ancratio"  ,   "ar",    2,  "numeric", "Ratio between successive bars of ancient edit distance needed to exceed for outputting plot, lower value is more permissive. Default: 0.8"
+    "dmgcutoff" ,   "d" ,   2,  "double",  "Cutoff threshold for 3 prime damage for outputting plot. Default: 0, no cutoff is used",
+    "readdistcutoff","c", 2,  "double",  "Cutoff threshold for read distribution (stacking) for outputting plot. Default: 0, no cutoff is used",
+    "defratio"  ,   "e", 2, "double", "Absolute value sums of edit distances of ratio between successive bars of default edit distance needed to exceed for outputting plot, lower value is more permissive. Default: 0.9",
+    "ancratio"  ,   "a",    2,  "double", "Ratio between successive bars of ancient edit distance needed to exceed for outputting plot, lower value is more permissive. Default: 0.8"
 ), byrow=TRUE, ncol=5);
 opt = getopt(spec);
 
@@ -170,7 +170,7 @@ if ( !is.null(opt$help) ) {
 ## assign args and modify node.vec (tr ' ' '_')
 path <- opt$rmaex.out.fld
 if (substr(path,nchar(path),nchar(path)) != "/"){path <- paste(path ,"/",sep="")} # add trailing "/" if missing
-if(opt$maltex.filter == 'default') {maltex.mode <- 'default'} else {maltex.mode <- c('default','ancient')}
+if (opt$maltex.filter == 'default') {maltex.mode <- 'default'} else {maltex.mode <- c('default','ancient')}
 if ( !is.null(opt$dmgcutoff) ) {dmgcutoff <- opt$dmgcutoff} else {dmgcutoff <- 0} 
 if ( !is.null(opt$readdistcutoff) ) {readdistcutoff <- opt$readdistcutoff} else {readdistcutoff <- 0}
 if ( !is.null(opt$defratio) ) {defratio <- opt$defratio} else {defratio <- 0.9}
