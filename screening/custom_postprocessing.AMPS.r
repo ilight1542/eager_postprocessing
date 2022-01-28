@@ -310,16 +310,6 @@ output_parameters_table <- data.frame(
 )
 write.table(output_parameters_table, file = paste(path,"post_processing_parameters.txt",sep=""), sep="\t", row.names=FALSE, col.names=TRUE,quote=FALSE)
 
-"""
-    malt_extract_mode= mltexmd,
-    malt_extract_output_folder= opt$rmaex.out.fld,
-    paired_end_mode= toString(opt$paired_end_mode),
-    node_list= opt$node,
-    damage_cutoff=dmgcutoff,
-    read_distribution_cutoff=readdistcutoff,
-    default_edit_distance_ratio=defratio,
-    ancient_edit_distance_ratio=ancratio,
-"""
 ########################
 ###### Candidate Profile PDFs
 ########################
