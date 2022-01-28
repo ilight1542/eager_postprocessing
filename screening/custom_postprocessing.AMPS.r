@@ -208,6 +208,9 @@ data[, c(4:9,11:16) ] = apply(data[ , c(4:9,11:16)], 2, function(x) as.numeric(a
 #############
 ## Extract scores and build matrix
 #############
+
+## scores are based on edit distance ratios, and damage
+## only nodes with one of these + a read distribution above the cutoff will be output to pdf format/in the heatmap
 if(length(maltex.mode) == 2){
     ## Default-Ancient
     trg1 <- data[ data[,'def.dr4'] >= defratio & !is.na(data[,'def.dr4']) & data[,'def.rd'] > readdistcutoff, ] ## Step1: DiffRatio0-4: > defratio (default = 0.9) and read distribution > cutoff (default = 0)
@@ -225,10 +228,10 @@ if(length(maltex.mode) == 2){
             res[ trg3[p,'spec']  , trg3[p,'id'] ] <- 4
         }
     }
-} else {
+} else { 
     ## Default: Extract scores and build matrix
-    trg1 <- data[ data[,'def.dr4'] >= defratio & !is.na(data[,'def.dr4']) , ] ## Step1: DiffRatio0-4: > defratio (default = 0.9)
-    trg2 <- data[ data[,'def.mapDam'] > dmgcutoff & !is.na(data[,'def.mapDam']) , ] ## Step2: Terminal Damage Present (default = 0)
+    trg1 <- data[ data[,'def.dr4'] >= defratio & !is.na(data[,'def.dr4']) & data[,'def.rd'] > readdistcutoff , ] ## Step1: DiffRatio0-4: > defratio (default = 0.9)
+    trg2 <- data[ data[,'def.mapDam'] > dmgcutoff & !is.na(data[,'def.mapDam']) & data[,'def.rd'] > readdistcutoff , ] ## Step2: Terminal Damage Present (default = 0)
 
     # Build Matrix for Heatmap
     res <- matrix(1L,nrow=length(unq.spec),ncol=length(all.inds),dimnames=list(a=unq.spec,b=all.inds))
@@ -298,6 +301,25 @@ if (!is.null(opt$heatmap.json)) {
     write_json(red.res.json, path = paste(path,'heatmap_overview_Wevid.json',sep = ""), pretty = T)
 }
 
+## Export postprocessing log
+if (maltex.mode == c('default','ancient') {mltexmd <- 'def_anc'} else {mltexmd <- 'default'}
+
+output_log_table <- data.frame(
+    variable=c('malt_extract_mode','malt_extract_output_folder','paired_end_mode','node_list','damage_cutoff','read_distribution_cutoff','default_edit_distance_ratio','ancient_edit_distance_ratio')
+    values=c(mltexmd,opt$rmaex.out.fld,toString(opt$paired_end_mode),opt$node,dmgcutoff,readdistcutoff,defratio,ancratio,)
+)
+write.table(output_log_table, file = paste(path,"post_processing_parameters.txt",sep=""), sep="\t", row.names=FALSE, col.names=TRUE,quote=FALSE)
+
+"""
+    malt_extract_mode= mltexmd,
+    malt_extract_output_folder= opt$rmaex.out.fld,
+    paired_end_mode= toString(opt$paired_end_mode),
+    node_list= opt$node,
+    damage_cutoff=dmgcutoff,
+    read_distribution_cutoff=readdistcutoff,
+    default_edit_distance_ratio=defratio,
+    ancient_edit_distance_ratio=ancratio,
+"""
 ########################
 ###### Candidate Profile PDFs
 ########################
