@@ -301,11 +301,11 @@ if (!is.null(opt$heatmap.json)) {
     write_json(red.res.json, path = paste(path,'heatmap_overview_Wevid.json',sep = ""), pretty = T)
 }
 
-## Export postprocessing log
+## Export postprocessing parameters text file
 if (maltex.mode == c('default','ancient')) {mltexmd <- 'def_anc'} else {mltexmd <- 'default'}
 
-output_log_table <- data.frame(
-    variable=c('malt_extract_mode','malt_extract_output_folder','paired_end_mode','node_list','damage_cutoff','read_distribution_cutoff','default_edit_distance_ratio','ancient_edit_distance_ratio')
+output_parameters_table <- data.frame(
+    variable=c('malt_extract_mode','malt_extract_output_folder','paired_end_mode','node_list','damage_cutoff','read_distribution_cutoff','default_edit_distance_ratio','ancient_edit_distance_ratio'),
     values=c(mltexmd,opt$rmaex.out.fld,toString(opt$paired_end_mode),opt$node,dmgcutoff,readdistcutoff,defratio,ancratio,)
 )
 write.table(output_log_table, file = paste(path,"post_processing_parameters.txt",sep=""), sep="\t", row.names=FALSE, col.names=TRUE,quote=FALSE)
