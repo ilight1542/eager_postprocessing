@@ -302,7 +302,7 @@ if (!is.null(opt$heatmap.json)) {
 }
 
 ## Export postprocessing log
-if (maltex.mode == c('default','ancient') {mltexmd <- 'def_anc'} else {mltexmd <- 'default'}
+if (maltex.mode == c('default','ancient')) {mltexmd <- 'def_anc'} else {mltexmd <- 'default'}
 
 output_log_table <- data.frame(
     variable=c('malt_extract_mode','malt_extract_output_folder','paired_end_mode','node_list','damage_cutoff','read_distribution_cutoff','default_edit_distance_ratio','ancient_edit_distance_ratio')
