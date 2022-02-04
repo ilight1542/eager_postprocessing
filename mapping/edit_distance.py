@@ -8,34 +8,49 @@ import numpy as np
 
 parser = argparse.ArgumentParser(description='create edit distance plot from bam imputs')
 parser.add_argument('-bams', '--bams', metavar=".bam file(s)", required=True, nargs='+', help="bam inputs")
-parser.add_argument('--relative', metavar="reference --> lengths", nargs='?', help="compute edit distance relative to genome length, reference --> lengths, if by_chrom just input T")
 parser.add_argument('--output', action='store_true', help="outputs plot as png file")
 parser.add_argument('--file_name', nargs=1, help="file name output if printing")
+parser.add_argument('--relative',action='store_true', help="compute edit distance relative to genome length")
 parser.add_argument('--name_loc', metavar="pos", nargs='?', default=4, help="position of sample name, (num of / from end)")
 parser.add_argument('--by_chrom', action='store_true',help="parse edit distances by chromosome")
 parser.add_argument('--single_reference', metavar='name', nargs=1, help="name of reference all bams were mapped to")
 parser.add_argument('--group_by_sample',action='store_true',help='group barchart by sample rather than by edit distance')
+parser.add_argument('--quality_cutoff',nargs='?',default=4, metavar="MQ", help="MQ cutoff for discarding mapped reads, default=0")
 args=parser.parse_args()
 
-def get_edit_dist(bam, by_chrom=False):
+def get_edit_dist(bam, by_chrom=False, qual=0):
     """parses bam files to get edit distances for reads mapped to reference"""
     edit_dists=[]
     list_max=0
     if by_chrom:
         references=bam.references
         by_chrom_edit={ref:[] for ref in references}
+        ref_len=0
         for ref in references:
+            ref_len+=bam.get_reference_length(ref)
+            name=bam.filename ## will eventually need to str split on / and index from end (as name loc is done)
             for i in bam.fetch(ref):
-                current_edit_dist=i.get_tags()[6][1]
+                tag_dict={}
+                for tag in i.get_tags():
+                    tag_dict[tag[0]]=tag[1]
+                if 'NM' in tag_dict: ## make edit distance sure tag is actually present
+                    current_edit_dist=tag_dict['NM']
                 if current_edit_dist > list_max:
                     list_max=current_edit_dist
-                by_chrom_edit[ref].append(current_edit_dist)
-        return (by_chrom_edit, list_max)
+        return (by_chrom_edit, list_max, (name,ref_len))
     for i in bam.fetch():
-        current_edit_dist=i.get_tags()[6][1]
+        tag_dict={}
+        for tag in i.get_tags():
+            tag_dict[tag[0]]=tag[1]
+        if 'NM' in tag_dict:
+            current_edit_dist=tag_dict['NM']
+        else: 
+            print(tag_dict)
         if current_edit_dist > list_max:
             list_max=current_edit_dist
-        edit_dists.append(current_edit_dist)
+
+        if i.mapping_quality > 30:
+            edit_dists.append(current_edit_dist)
     return (edit_dists, list_max)
 
 def bar_plot(ax, data, colors=None, total_width=0.8, single_width=1, legend=True):
@@ -184,7 +199,7 @@ def output_plot(input, loc, single_reference=None, reference_size_file=None, rel
             header=str(single_reference)
             fig.suptitle("Edit Distances for "+header)
         else:
-            fig.suptitle("Edit Distances Across Samples to" + reference_name)
+            fig.suptitle("Edit Distances Across Samples")
         plt.xlabel("Edit Distance")
         plt.subplots_adjust(left=0.1,
                     bottom=0.1, 
@@ -221,7 +236,7 @@ if __name__ == '__main__':
         single_ref=args.single_reference[0]
     else: 
         single_ref=None
-    if args.relative != None:
-        output_plot(args.bams, loc=int(args.name_loc),single_reference=single_ref, reference_size_file=args.relative, relative=True, output=args.output, filename=args.file_name, by_chrom=args.by_chrom,group_by_sample=args.group_by_sample)
+    if args.relative != False:
+        output_plot(args.bams, loc=int(args.name_loc),single_reference=single_ref, relative=True, output=args.output, filename=args.file_name, by_chrom=args.by_chrom,group_by_sample=args.group_by_sample,qual=int(args.quality_cutoff))
     else:
-        output_plot(args.bams,loc=int(args.name_loc),single_reference=single_ref, output=args.output, filename=args.file_name, by_chrom=args.by_chrom,group_by_sample=args.group_by_sample)
+        output_plot(args.bams,loc=int(args.name_loc),single_reference=single_ref, output=args.output, filename=args.file_name, by_chrom=args.by_chrom,group_by_sample=args.group_by_sample,qual=int(args.quality_cutoff))
