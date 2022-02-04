@@ -2,6 +2,7 @@ import argparse
 import csv
 import pysam
 import matplotlib.pyplot as plt
+import numpy as np
 
 ## eventually take in a list of bams (single file with pointers?)
 
@@ -13,6 +14,7 @@ parser.add_argument('--file_name', nargs=1, help="file name output if printing")
 parser.add_argument('--name_loc', metavar="pos", nargs='?', default=4, help="position of sample name, (num of / from end)")
 parser.add_argument('--by_chrom', action='store_true',help="parse edit distances by chromosome")
 parser.add_argument('--single_reference', metavar='name', nargs=1, help="name of reference all bams were mapped to")
+parser.add_argument('--group_by_sample',action='store_true',help='group barchart by sample rather than by edit distance')
 args=parser.parse_args()
 
 def get_edit_dist(bam, by_chrom=False):
@@ -103,6 +105,35 @@ def bar_plot(ax, data, colors=None, total_width=0.8, single_width=1, legend=True
     if legend:
         ax.legend(bars, data.keys())
 
+
+
+def bar_plot_samples(ax, data, colors=None, total_width=0.8, single_width=1, legend=True):
+    """
+    adapted from  https://stackoverflow.com/questions/14270391/python-matplotlib-multiple-bars user pascscha
+    Draws a bar plot with multiple bars per data point.
+    """
+    # Check if colors where provided, otherwhise use the default color cycle
+    labels=list(data.keys())
+    values=list(data.values())
+    if colors is None:
+        colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+
+    # Number of bars per group
+    num_plots_needed = len(data)
+    edit_dists_needed=len(values[0]) 
+    
+    # The width of a single bar
+    # List containing handles for the drawn bars, used for the legend
+    bars = []
+    # Iterate over all data
+    names=[]
+    for current_plot_index in range(num_plots_needed):
+        x=np.arange(len(values[current_plot_index]))
+        curr_data=values[current_plot_index]
+        ax[current_plot_index].bar(x,curr_data,0.9) ##third value is width of bars
+        ax[current_plot_index].set_title(labels[current_plot_index])
+        ax[current_plot_index].set_ylabel("Reads")
+
 def reference_sizes(ref_size_file):
     with open(ref_size_file, newline="\n") as output:
         csv_list=list(csv.reader(output, delimiter=" "))
@@ -111,7 +142,7 @@ def reference_sizes(ref_size_file):
         name_to_len_dict[line[0]] = int(line[1])
     return name_to_len_dict
 
-def output_plot(input, loc, single_reference=None, reference_size_file=None, relative=False, output=False, filename=None, by_chrom=False):
+def output_plot(input, loc, single_reference=None, reference_size_file=None, relative=False, output=False, filename=None, by_chrom=False, group_by_sample=False):
     edit_dist_list={}
     max=0
     edit_dist_summary={}
@@ -145,20 +176,38 @@ def output_plot(input, loc, single_reference=None, reference_size_file=None, rel
             else:
                 list_of_edit_dist.append(edit_dist_list[bams].count(i))
         edit_dist_summary[bams]=list_of_edit_dist
-    fig, ax = plt.subplots()
-    bar_plot(ax, edit_dist_summary)
+    if group_by_sample:
+        num_plots=len(edit_dist_summary)
+        fig, ax = plt.subplots(num_plots)
+        bar_plot_samples(ax, edit_dist_summary)
+        if single_reference is not None:
+            header=str(single_reference)
+            fig.suptitle("Edit Distances for "+header)
+        else:
+            fig.suptitle("Edit Distances Across Samples to" + reference_name)
+        plt.xlabel("Edit Distance")
+        plt.subplots_adjust(left=0.1,
+                    bottom=0.1, 
+                    right=0.9, 
+                    top=0.9, 
+                    hspace=0.5)
+        figure = plt.gcf()
+        figure.set_size_inches(8, 2*num_plots)
+    else:
+        fig, ax = plt.subplots()
+        bar_plot(ax, edit_dist_summary)
     # Check if single reference used
-    if single_reference is not None:
-        header=str(single_reference)
-        fig.suptitle("Edit Distances for "+header)
-    else:
-        fig.suptitle("Edit Distances per Reference")
-    plt.xticks(range(max))
-    plt.xlabel("Edit Distance")
-    if relative:
-        plt.ylabel("Reads relative to Reference size")
-    else:
-        plt.ylabel("Reads")
+        if single_reference is not None:
+            header=str(single_reference)
+            fig.suptitle("Edit Distances for "+header)
+        else:
+            fig.suptitle("Edit Distances per Reference")
+        plt.xticks(range(max))
+        plt.xlabel("Edit Distance")
+        if relative:
+            plt.ylabel("Reads relative to Reference size")
+        else:
+            plt.ylabel("Reads")
     if not output:
         plt.show()
     else:
@@ -173,6 +222,6 @@ if __name__ == '__main__':
     else: 
         single_ref=None
     if args.relative != None:
-        output_plot(args.bams, loc=int(args.name_loc),single_reference=single_ref, reference_size_file=args.relative, relative=True, output=args.output, filename=args.file_name, by_chrom=args.by_chrom)
+        output_plot(args.bams, loc=int(args.name_loc),single_reference=single_ref, reference_size_file=args.relative, relative=True, output=args.output, filename=args.file_name, by_chrom=args.by_chrom,group_by_sample=args.group_by_sample)
     else:
-        output_plot(args.bams,loc=int(args.name_loc),single_reference=single_ref, output=args.output, filename=args.file_name, by_chrom=args.by_chrom)
+        output_plot(args.bams,loc=int(args.name_loc),single_reference=single_ref, output=args.output, filename=args.file_name, by_chrom=args.by_chrom,group_by_sample=args.group_by_sample)
