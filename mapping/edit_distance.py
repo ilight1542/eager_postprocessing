@@ -48,8 +48,7 @@ def get_edit_dist(bam, by_chrom=False, qual=0):
             print(tag_dict)
         if current_edit_dist > list_max:
             list_max=current_edit_dist
-
-        if i.mapping_quality > 30:
+        if i.mapping_quality > qual:
             edit_dists.append(current_edit_dist)
     return (edit_dists, list_max)
 
@@ -157,14 +156,14 @@ def reference_sizes(ref_size_file):
         name_to_len_dict[line[0]] = int(line[1])
     return name_to_len_dict
 
-def output_plot(input, loc, single_reference=None, reference_size_file=None, relative=False, output=False, filename=None, by_chrom=False, group_by_sample=False):
+def output_plot(input, loc, single_reference=None, reference_size_file=None, relative=False, output=False, filename=None, by_chrom=False, group_by_sample=False, quality_cutoff=0):
     edit_dist_list={}
     max=0
     edit_dist_summary={}
     for bams in input:
         alignment_file=pysam.AlignmentFile(str(bams),"rb")
         if by_chrom:
-            edit_dist_output=get_edit_dist(alignment_file, True)
+            edit_dist_output=get_edit_dist(alignment_file, True,quality_cutoff)
             edit_dist_list=edit_dist_output[0]
             name=str(bams.split("/")[-loc])
             name+="_by_chromosome"
@@ -237,6 +236,6 @@ if __name__ == '__main__':
     else: 
         single_ref=None
     if args.relative != False:
-        output_plot(args.bams, loc=int(args.name_loc),single_reference=single_ref, relative=True, output=args.output, filename=args.file_name, by_chrom=args.by_chrom,group_by_sample=args.group_by_sample,qual=int(args.quality_cutoff))
+        output_plot(args.bams, loc=int(args.name_loc),single_reference=single_ref, relative=True, output=args.output, filename=args.file_name, by_chrom=args.by_chrom,group_by_sample=args.group_by_sample,quality_cutoff=int(args.quality_cutoff))
     else:
-        output_plot(args.bams,loc=int(args.name_loc),single_reference=single_ref, output=args.output, filename=args.file_name, by_chrom=args.by_chrom,group_by_sample=args.group_by_sample,qual=int(args.quality_cutoff))
+        output_plot(args.bams,loc=int(args.name_loc),single_reference=single_ref, output=args.output, filename=args.file_name, by_chrom=args.by_chrom,group_by_sample=args.group_by_sample,quality_cutoff=int(args.quality_cutoff))
