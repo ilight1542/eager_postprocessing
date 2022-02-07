@@ -15,7 +15,7 @@ parser.add_argument('--name_loc', metavar="pos", nargs='?', default=4, help="pos
 parser.add_argument('--by_chrom', action='store_true',help="parse edit distances by chromosome")
 parser.add_argument('--single_reference', metavar='name', nargs=1, help="name of reference all bams were mapped to")
 parser.add_argument('--group_by_sample',action='store_true',help='group barchart by sample rather than by edit distance')
-parser.add_argument('--quality_cutoff',nargs='?',default=4, metavar="MQ", help="MQ cutoff for discarding mapped reads, default=0")
+parser.add_argument('--quality_cutoff',nargs='?',default=0, metavar="MQ", help="MQ cutoff for discarding mapped reads, default=0")
 args=parser.parse_args()
 
 def get_edit_dist(bam, by_chrom=False, qual=0):
