@@ -151,12 +151,14 @@ table.additionalNodeEntries1 <- function(id,tax,folder){
 
 ## get options, using the spec as defined by the enclosed list.
 ## we read the options from the default: commandArgs(TRUE).
+
+#TODO: fix paired_end_mode
 spec = matrix(c(
     "rmaex.out.fld",  "r" , 1, "character", "MALTextract output folder.",
     "maltex.filter",  "m" , 2, "character", "MALTextract filter mode: <default,def_anc>. This script is not designed for 'scan' output. Default: <def_anc>.",
     "threads",  "t" , 1, "integer", "Max number of cores used.",
     "help"    ,  "h" , 0, "logical", "Print this help.",
-    "paried_end_mode", "p", 0, "logical", "Runs in paired_end_mode for needing damage on either forward or reverse overhang for flagging",
+    "sequencestrategy", "s", 1, "character", "pe or se for needing damage on either forward or reverse overhang for flagging, default se",
     "node.list"   ,  "n" , 1, "character","List (\\n separated) of nodes to be reported on (aka input species/node list used for MALTextract).",
     "heatmap.json"   ,  "j", 2, "logical", "Optional exporting of heatmap data in json format.",
     "dmgcutoff" ,   "d" ,   2,  "double",  "Cutoff threshold for 3 prime damage for outputting plot. Default: 0, no cutoff is used",
@@ -186,7 +188,10 @@ if ( !is.null(opt$dmgcutoff) ) {dmgcutoff <- opt$dmgcutoff} else {dmgcutoff <- 0
 if ( !is.null(opt$readdistcutoff) ) {readdistcutoff <- opt$readdistcutoff} else {readdistcutoff <- 0}
 if ( !is.null(opt$defratio) ) {defratio <- opt$defratio} else {defratio <- 0.9}
 if ( !is.null(opt$ancratio) ) {ancratio <- opt$ancratio} else {ancratio <- 0.8}
-if ( !is.null(opt$paired_end_mode) ) {paired_end_mode <- TRUE} else { paired_end_mode <- FALSE }
+if ( is.null(opt$sequencestrategy) ) {paired_end_mode <- FALSE
+} else if (opt$sequencestrategy =='pe') {paired_end_mode <- TRUE
+} else { paired_end_mode <- FALSE }
+
 
 ## check if custom filtering values are acceptable
 if (dmgcutoff < 0 || dmgcutoff > 1) {stop("damage cutoff value should be within range of [0,1]")}
