@@ -1,0 +1,225 @@
+#! /usr/bin/env bash
+
+## run inside the directory containing all the loop iterations (eg subdirs of 1,2,3,..100,101,..)
+
+## defaults, will be overwritten if redefined in options parsing
+script_name=$(basename $0)
+prog_version=0.1.0
+
+dmgcutoff="0"
+defeditdist="0.9"
+anceditdist="0.1"
+seqtype="SE"
+skip=false
+
+threads=1
+
+
+## functions
+
+usage() {                                 # Function: Print a help message.
+  printf "Usage: $script_name [-O <OUTPUT DIR>] [-I </path/to/folder/with/eager/loops> ] [-n </path/to/malt/flagging/list.txt>, see postprocessing.AMPS ] [-d <damage cutoff on first/last read>, see postprocessing.AMPS] [-e <default read ratio>, see postprocessing.AMPS] [-a <ancient read ratio>, see postprocessing.AMPS] [-s <Sequencing strategy (PE vs SE)>, see postprocessing.AMPS] [-t <NUM_THREADS>] -h(elp) -v(erbose) -V(ersion)" 1>&2 
+  # Will make output NEXT to rma6 file supplying -r will only export major ranks
+}
+
+exit_abnormal() {
+    usage
+    exit 1
+}
+
+help() {
+    printf "
+    $(basename ${script_name^^})
+    NAME
+      
+    $script_name - collect parallelized eager runs and postprocess/reanalyse malt(extract) outputs 
+    SYNOPSIS
+      
+    $script_name [-O <OUTPUT DIR>] [-I </path/to/folder/with/eager/loops> ] [OPTIONAL ARGUMENTS]...
+
+    DESCRIPTION
+
+        $script_name is a bash script that collects and reanalyses outputs from parallelized nf-core/eager runs when malt/maltextract is ran.
+        Additionally, James Fellows Yates' rma-tabuliser is ran. Optional arguments modify malt-extract postprocessing scripts to output summary pdfs of candidate hits.
+
+        Requires (from rma-tabuliser): MEGAN (>= v6.21.7) to be installed on your system, and the contents of the tools/ directory (in the 
+        MEGAN installation path) to be in your \$PATH. (Tip: the bioconda version of MEGAN puts these tools already in 
+        your path). rma-tabuliser in your \$PATH variable (from https://github.com/jfy133/rma-tabuliser/blob/main/rma-tabuliser)
+        Requires (from custom_postprocessing.AMPS.r): R (tested on version 3.3.1 +), R libraries: parallel, getopt, gridBase, gridExtra Optional: R libraries: jsonlite (if you want generate json-formatted raw heatmap data)
+
+        All requirements filled by custom yaml for unix systems (see https://github.com/ilight1542/eager_postprocessing/tree/main/screening)
+    
+    OPTIONS
+
+        Mandatory:
+
+        -O [PATH]       
+            Output directory for summary files, and malt-extract reanalysis, will create the path if not present already
+
+        -I [PATH]       
+            Input path to (parallel) eager processing, eg where to find files to reanalyze/summarize
+            essentially at least one level above /results/.. directory from eager output
+            parallel eager processes should be \$I/[run 1, 2, 3...]/results
+
+        -n [file PATH]      
+            path to node file for malt-extract; List (\n separated) of nodes to be reported on (aka input species/node list used for MALTextract). 
+            custom_postprocessing.AMPS.r option
+        
+
+        Optional:
+
+        -d [damage cutoff]      
+            Cutoff threshold for end of read damage for outputting plot. 
+            Default: 0, no cutoff is used. Range [0,1). custom_postprocessing.AMPS.r option
+
+        -e [default read edit ratio]         
+            Ratio for default read edit distances. Default: 0.9, strong declining edit distance required. 
+            Range [0,1). custom_postprocessing.AMPS.r option
+
+        -a [ancient read edit ratio]        
+            Ratio for ancient read edit distances. Default:0.8, fairly strong declining edit distance required. 
+            Range [0,1). custom_postprocessing.AMPS.r option
+
+        -s [sequence type]      
+            Paired end or single end for calculating damage cutoff (if it allows damage on either end to satisfy the condition).
+            Default SE. Options (SE, PE). custom_postprocessing.AMPS.r option
+
+        -t [NUM_THREADS]        
+            Number of threads to use, default 1
+
+        -S      
+            skip rma6-tabuliser
+        
+        -h      
+            print this help message
+
+        -v      
+            make execution verbose
+
+        -V      
+            print version
+
+    AUTHOR
+        
+        Ian Light (ilight1542@gmail.com), rma-tabuliser: James A. Fellows Yates (jfy133@gmail.com)
+
+    VERSION
+
+        $prog_version
+    \n    
+    "
+}
+
+## argument parsing ## 
+while getopts ":O:I:n:d:e:a:s:tShvV" options; do         # Loop: Get the next option;
+                                          # use silent error checking
+  case "${options}" in                    # 
+    O)output=${OPTARG%%/};;
+    I)input=${OPTARG%%/};;
+    n)nodelist=${OPTARG};;
+    d)dmgcutoff=${OPTARG};;
+    e)defeditdist=${OPTARG};;
+    a)anceditdist=${OPTARG};;
+    s)seqtype=${OPTARG};;
+    t)threads=${OPTARG};;
+    S)skip=true;;
+    v)version=true;;
+    V)verbose="-v";;
+    h)help=true;;
+    :)                                    # If expected argument omitted:
+      echo "Error: -${OPTARG} requires an argument."
+      exit_abnormal                       # Exit abnormally.
+      ;;
+    *)                                    # If unknown (any other) option:
+      exit_abnormal                       # Exit abnormally.
+      ;;
+  esac
+done
+
+
+## validation ##
+
+if [[ $version == true ]]; then
+  printf $prog_version
+  exit 0
+fi
+
+if [[ $OPTIND -eq 1 ]]; then echo "No options were passed!" && exit_abnormal; fi
+shift $((OPTIND-1))
+
+if [[ $help == true ]]; then help && exit 0; fi
+
+if ! command -v rma2info &> /dev/null
+then
+    echo "[$0] ERROR: MEGAN's rma2info could not be found in your path. Check MEGAN6 (>= v6.21.7) installation. Consider using yaml from https://github.com/ilight1542/eager_postprocessing/tree/main/screening"
+    exit
+fi
+
+# mandatory args
+if [ ! "$output" ] || [ ! "$input" ] || [ ! "$nodelist" ]; then
+    echo "output directory, input directory, and node list for malt extract are all madatory options"
+    echo "please provide these using -O, -I, and -n; respectively"
+    exit_abnormal
+fi 
+
+## declaring needed variables
+anc_runsum=ancient/RunSummary.txt
+def_runsum=default/RunSummary.txt
+anc_totalcount=ancient/TotalCount.txt
+def_totalcount=default/TotalCount.txt
+
+## creating output directory structure
+
+mkdir -p ${output}/ancient/coverage/
+mkdir -p ${output}/ancient/damageMismatch/
+mkdir -p ${output}/ancient/editDistance/
+mkdir -p ${output}/ancient/filterInformation/
+mkdir -p ${output}/ancient/readDist/
+mkdir -p ${output}/ancient/percentIdentity/
+mkdir -p ${output}/default/coverage/
+mkdir -p ${output}/default/damageMismatch/
+mkdir -p ${output}/default/editDistance/
+mkdir -p ${output}/default/filterInformation/
+mkdir -p ${output}/default/readDist/
+mkdir -p ${output}/default/percentIdentity/
+
+## collecting files
+for i in ${input}/*/results/maltextract/results/
+    do
+    cp ${i}/ancient/coverage/*.txt ${output}/ancient/coverage/
+    cp ${i}/ancient/damageMismatch/*.txt ${output}/ancient/damageMismatch/
+    cp ${i}/ancient/editDistance/*.txt ${output}/ancient/editDistance/
+    cp ${i}/ancient/filterInformation/*.txt ${output}/ancient/filterInformation/
+    cp ${i}/ancient/percentIdentity/*.txt ${output}/ancient/percentIdentity/
+    cp ${i}/ancient/readDist/*.txt ${output}/ancient/readDist/
+    cp ${i}/default/coverage/*.txt ${output}/default/coverage/
+    cp ${i}/default/damageMismatch/*.txt ${output}/default/damageMismatch/
+    cp ${i}/default/editDistance/*.txt ${output}/default/editDistance/
+    cp ${i}/default/filterInformation/*.txt ${output}/default/filterInformation/
+    cp ${i}/default/percentIdentity/*.txt ${output}/default/percentIdentity/
+    cp ${i}/default/readDist/*.txt ${output}/default/readDist/
+done
+
+## collapsing files 
+python3 ~/bin/merge_summary_maltextract.py -i ${input}/*/results/maltextract/results/${anc_runsum} -o RunSummary.txt
+mv RunSummary.txt ${output}/ancient/
+python3 ~/bin/merge_summary_maltextract.py -i ${input}/*/results/maltextract/results/${def_runsum} -o RunSummary.txt
+mv RunSummary.txt ${output}/default/
+python3 ~/bin/merge_summary_maltextract.py -i ${input}/*/results/maltextract/results/${anc_totalcount} -o TotalCount.txt
+mv TotalCount.txt ${output}/ancient/
+python3 ~/bin/merge_summary_maltextract.py -i ${input}/*/results/maltextract/results/${def_totalcount} -o TotalCount.txt
+mv TotalCount.txt ${output}/default/
+
+## running custom_postprocessing #TODO: fix how this behaves
+custom_postprocessing.AMPS.r -r ${output} -n ${nodelist} -t ${threads} -m def_anc -d 0.1 -c 0.5 -e 0
+
+## runnning james' rma tabuliser
+if [[ $skip == false ]]; then
+    mkdir -p ${output}/rma6_collection
+    cp ${input}/*/results/metagenomic_classification/malt/*.rma6 ${output}/rma6_collection
+    rma-tabuliser -d ${output}/rma6_collection -t ${threads} -n
+    ## clean copied rma6 files
+    mv ${output}/rma6_collection/count_table.tsv ${output}/count_table.tsv
+    rm -r ${output}/rma6_collection
+fi
+exit 0
