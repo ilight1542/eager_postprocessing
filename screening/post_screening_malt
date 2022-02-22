@@ -7,11 +7,11 @@ script_name=$(basename $0)
 prog_version=0.1.0
 
 dmgcutoff="0"
+readdistcutoff="0"
 defeditdist="0.9"
 anceditdist="0.1"
 seqtype="SE"
 skip=false
-
 threads=1
 
 
@@ -72,6 +72,10 @@ help() {
             Cutoff threshold for end of read damage for outputting plot. 
             Default: 0, no cutoff is used. Range [0,1). custom_postprocessing.AMPS.r option
 
+        -i [read distribution cutoff]
+            Distribution of reads required for top reference for output of candidate profile. Default 0, no cutoff used.
+            Range [0,1). custom_postprocessing.AMPS.r option
+
         -e [default read edit ratio]         
             Ratio for default read edit distances. Default: 0.9, strong declining edit distance required. 
             Range [0,1). custom_postprocessing.AMPS.r option
@@ -111,13 +115,14 @@ help() {
 }
 
 ## argument parsing ## 
-while getopts ":O:I:n:d:e:a:s:tShvV" options; do         # Loop: Get the next option;
+while getopts ":O:I:n:d:i:e:a:s:tShvV" options; do         # Loop: Get the next option;
                                           # use silent error checking
   case "${options}" in                    # 
     O)output=${OPTARG%%/};;
     I)input=${OPTARG%%/};;
     n)nodelist=${OPTARG};;
     d)dmgcutoff=${OPTARG};;
+    i)readdistcutoff=${OPTARG};;
     e)defeditdist=${OPTARG};;
     a)anceditdist=${OPTARG};;
     s)seqtype=${OPTARG};;
@@ -210,8 +215,8 @@ mv TotalCount.txt ${output}/ancient/
 python3 ~/bin/merge_summary_maltextract.py -i ${input}/*/results/maltextract/results/${def_totalcount} -o TotalCount.txt
 mv TotalCount.txt ${output}/default/
 
-## running custom_postprocessing #TODO: fix how this behaves
-custom_postprocessing.AMPS.r -r ${output} -n ${nodelist} -t ${threads} -m def_anc -d 0.1 -c 0.5 -e 0
+## running custom_postprocessing, defaults are defined at top of script, if not given in standard input
+custom_postprocessing.AMPS.r -r ${output} -n ${nodelist} -t ${threads} -m def_anc -d ${dmgcutoff} -c ${readdistcutoff} -e ${defeditdist} -a ${anceditdist} -s ${seqtype}
 
 ## runnning james' rma tabuliser
 if [[ $skip == false ]]; then

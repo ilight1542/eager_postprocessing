@@ -169,7 +169,7 @@ def output_plot(input, loc, single_reference=None, reference_size_file=None, rel
             name+="_by_chromosome"
         else:
             name=str(bams.split("/")[-loc]) ## this requires the naming scheme to be the same across inputs
-            edit_dist_output=get_edit_dist(alignment_file)
+            edit_dist_output=get_edit_dist(alignment_file, False, quality_cutoff)
             edit_dist_list[name]=edit_dist_output[0]
         if edit_dist_output[1] > max:
             max = edit_dist_output[1]
