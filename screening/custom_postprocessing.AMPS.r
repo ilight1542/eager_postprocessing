@@ -152,7 +152,6 @@ table.additionalNodeEntries1 <- function(id,tax,folder){
 ## get options, using the spec as defined by the enclosed list.
 ## we read the options from the default: commandArgs(TRUE).
 
-#TODO: fix paired_end_mode
 spec = matrix(c(
     "rmaex.out.fld",  "r" , 1, "character", "MALTextract output folder.",
     "maltex.filter",  "m" , 2, "character", "MALTextract filter mode: <default,def_anc>. This script is not designed for 'scan' output. Default: <def_anc>.",
@@ -164,7 +163,7 @@ spec = matrix(c(
     "dmgcutoff" ,   "d" ,   2,  "double",  "Cutoff threshold for 3 prime damage for outputting plot. Default: 0, no cutoff is used",
     "readdistcutoff","c", 2,  "double",  "Cutoff threshold for read distribution (stacking) for outputting plot. Default: 0, no cutoff is used",
     "defratio"  ,   "e", 2, "double", "Absolute value sums of edit distances of ratio between successive bars of default edit distance needed to exceed for outputting plot, lower value is more permissive. Default: 0.9",
-    "ancratio"  ,   "a",    2,  "double", "Ratio between successive bars of ancient edit distance needed to exceed for outputting plot, lower value is more permissive. Default: 0.8"
+    "ancratio"  ,   "a",    2,  "double", "Ratio between successive bars of ancient edit distance needed to exceed for outputting plot, lower value is more permissive. Default: 0.8",
     "firm"  , "f", 0, "logical", "Use firm cutoffs, only output if all thresholds met for outputting plots, eg dmg, read dist, def ratio and anc ratio"
 ), byrow=TRUE, ncol=5);
 opt = getopt(spec);
