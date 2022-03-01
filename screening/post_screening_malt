@@ -12,6 +12,7 @@ defeditdist="0.9"
 anceditdist="0.1"
 seqtype="SE"
 skip=false
+firm=false
 threads=1
 
 
@@ -93,6 +94,10 @@ help() {
 
         -S      
             skip rma6-tabuliser
+
+        -f
+            firm cutoff outputs, output maltextract pdf summary only if all thresholds are exceeded (stp3 files only)
+            custom_postprocessing.AMPS.r option
         
         -h      
             print this help message
@@ -127,6 +132,7 @@ while getopts ":O:I:n:d:i:e:a:s:tShvV" options; do         # Loop: Get the next 
     a)anceditdist=${OPTARG};;
     s)seqtype=${OPTARG};;
     t)threads=${OPTARG};;
+    f)firm=true;;
     S)skip=true;;
     v)version=true;;
     V)verbose="-v";;
@@ -216,7 +222,11 @@ python3 ~/bin/merge_summary_maltextract.py -i ${input}/*/results/maltextract/res
 mv TotalCount.txt ${output}/default/
 
 ## running custom_postprocessing, defaults are defined at top of script, if not given in standard input
-custom_postprocessing.AMPS.r -r ${output} -n ${nodelist} -t ${threads} -m def_anc -d ${dmgcutoff} -c ${readdistcutoff} -e ${defeditdist} -a ${anceditdist} -s ${seqtype}
+if [[ ${firm} == false ]]; then
+    custom_postprocessing.AMPS.r -r ${output} -n ${nodelist} -t ${threads} -m def_anc -d ${dmgcutoff} -c ${readdistcutoff} -e ${defeditdist} -a ${anceditdist} -s ${seqtype}
+else
+    custom_postprocessing.AMPS.r -r ${output} -n ${nodelist} -t ${threads} -m def_anc -d ${dmgcutoff} -c ${readdistcutoff} -e ${defeditdist} -a ${anceditdist} -s ${seqtype} -f
+fi
 
 ## runnning james' rma tabuliser
 if [[ $skip == false ]]; then

@@ -39,9 +39,9 @@ extract.stats5 <- function(id,path,malt.mode,paried_end_mode){
             # if paired end: value def.mapDam and anc.mapDam have propotion of reads with damage at first index of 3' end or last base of 5' end, depending on which is higher
             # if single end: value def.mapDam and anc.mapDam have propotion of reads with damage at first index of 3'
             if (paried_end_mode) {
-             mp.dam.spec.max <- max(mp.dam.spec[ rowMax ,"C>T_1"] , mp.dam.spec[ rowMax ,"G>A_20"])
+             mp.dam.spec.max <- max(mp.dam.spec[ rowMax ,"C>T_1" ] , mp.dam.spec[ rowMax ,"G>A_20"])
             } else {
-             mp.dam.spec.max <- mp.dam.spec[ rowMax ,"C>T_1"]                
+             mp.dam.spec.max <- mp.dam.spec[ rowMax ,"C>T_1" ]                
             }
             ## extract max readDis:uniquePerReference for TopScorer@EdDis
             read.dis.uniq <- rd.dis.spec[ rowMax ,'uniquePerReference']
@@ -165,6 +165,7 @@ spec = matrix(c(
     "readdistcutoff","c", 2,  "double",  "Cutoff threshold for read distribution (stacking) for outputting plot. Default: 0, no cutoff is used",
     "defratio"  ,   "e", 2, "double", "Absolute value sums of edit distances of ratio between successive bars of default edit distance needed to exceed for outputting plot, lower value is more permissive. Default: 0.9",
     "ancratio"  ,   "a",    2,  "double", "Ratio between successive bars of ancient edit distance needed to exceed for outputting plot, lower value is more permissive. Default: 0.8"
+    "firm"  , "f", 0, "logical", "Use firm cutoffs, only output if all thresholds met for outputting plots, eg dmg, read dist, def ratio and anc ratio"
 ), byrow=TRUE, ncol=5);
 opt = getopt(spec);
 
@@ -191,7 +192,7 @@ if ( !is.null(opt$ancratio) ) {ancratio <- opt$ancratio} else {ancratio <- 0.8}
 if ( is.null(opt$sequencestrategy) ) {paired_end_mode <- FALSE
 } else if (opt$sequencestrategy =='pe') {paired_end_mode <- TRUE
 } else { paired_end_mode <- FALSE }
-
+if ( !is.null(opt$firm) ) {firm <- TRUE}
 
 ## check if custom filtering values are acceptable
 if (dmgcutoff < 0 || dmgcutoff > 1) {stop("damage cutoff value should be within range of [0,1]")}
@@ -218,11 +219,20 @@ data[, c(4:9,11:16) ] = apply(data[ , c(4:9,11:16)], 2, function(x) as.numeric(a
 ## only nodes with one of these + a read distribution above the cutoff will be output to pdf format/in the heatmap
 if(length(maltex.mode) == 2){
     ## Default-Ancient
-    #TODO: fix this somehow, test localy ideally
-    trg1 <- data[ data[,'def.dr4'] >= defratio & !is.na(data[,'def.dr4']) & data[,'def.rd'] > readdistcutoff, ] ## Step1: DiffRatio0-4: > defratio (default = 0.9) and read distribution > cutoff (default = 0)
-    trg2 <- data[ data[,'def.mapDam'] > dmgcutoff & !is.na(data[,'def.mapDam']) & data[,'def.rd'] > readdistcutoff, ] ## Step2: Terminal Damage Present (default = 0) #TODO: fix mapDam cutoff, currently it is ANY position has > cutoff, need first position #maybe C>T_1
-    trg3 <- data[ data[,'anc.dr4'] > ancratio & !is.na(data[,'anc.dr4']) & data[,'def.rd'] > readdistcutoff, ] ## Step3: DiffRatio1-4: > ancratio (default = 0.8)
+    
+    ## if firm only output step 3 (all thresholds met), default only needs to satisfy default ratio + read distribution
+    if ( firm ) {
+        positions <- data[ data[,'def.dr4'] >= defratio & !is.na(data[,'def.dr4']) & data[,'def.rd'] > readdistcutoff & data[,'def.mapDam'] > dmgcutoff & !is.na(data[,'def.mapDam']) & data[,'anc.dr4'] > ancratio & !is.na(data[,'anc.dr4']), ]
+        trg1 <- positions
+        trg2 <- positions
+        trg3 <- positions
+    } else {
+        trg1 <- data[ data[,'def.dr4'] >= defratio & !is.na(data[,'def.dr4']) & data[,'def.rd'] > readdistcutoff, ] ## Step1: DiffRatio0-4: > defratio (default = 0.9) and read distribution > cutoff (default = 0)
+        trg2 <- data[ data[,'def.mapDam'] > dmgcutoff & !is.na(data[,'def.mapDam']) & data[,'def.rd'] > readdistcutoff, ] ## Step2: Terminal Damage Present (default = 0) #TODO: fix mapDam cutoff, currently it is ANY position has > cutoff, need first position #maybe C>T_1
+        trg3 <- data[ data[,'anc.dr4'] > ancratio & !is.na(data[,'anc.dr4']) & data[,'def.rd'] > readdistcutoff, ] ## Step3: DiffRatio1-4: > ancratio (default = 0.8)
+    }
 
+    
     # Build Matrix for Heatmap
     res <- matrix(1L,nrow=length(unq.spec),ncol=length(all.inds),dimnames=list(a=unq.spec,b=all.inds))
     for (p in rownames(trg1)){
