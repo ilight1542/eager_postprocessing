@@ -63,7 +63,7 @@ help() {
             parallel eager processes should be \$I/[run 1, 2, 3...]/results
 
         -n [file PATH]      
-            path to node file for malt-extract; List (\n separated) of nodes to be reported on (aka input species/node list used for MALTextract). 
+            path to node file for malt-extract; List (\\n separated) of nodes to be reported on (aka input species/node list used for MALTextract). 
             custom_postprocessing.AMPS.r option
         
 
@@ -120,7 +120,7 @@ help() {
 }
 
 ## argument parsing ## 
-while getopts ":O:I:n:d:i:e:a:s:tShvV" options; do         # Loop: Get the next option;
+while getopts ":O:I:n:d:i:e:a:s:tfShvV" options; do         # Loop: Get the next option;
                                           # use silent error checking
   case "${options}" in                    # 
     O)output=${OPTARG%%/};;
