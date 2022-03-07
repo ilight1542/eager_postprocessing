@@ -56,55 +56,42 @@ help() {
 
         -O [PATH]       
             Output directory for summary files, and malt-extract reanalysis, will create the path if not present already
-
         -I [PATH]       
             Input path to (parallel) eager processing, eg where to find files to reanalyze/summarize
             essentially at least one level above /results/.. directory from eager output
             parallel eager processes should be \$I/[run 1, 2, 3...]/results
-
         -n [file PATH]      
             path to node file for malt-extract; List (\\n separated) of nodes to be reported on (aka input species/node list used for MALTextract). 
             custom_postprocessing.AMPS.r option
         
-
         Optional:
 
         -d [damage cutoff]      
             Cutoff threshold for end of read damage for outputting plot. 
             Default: 0, no cutoff is used. Range [0,1). custom_postprocessing.AMPS.r option
-
         -i [read distribution cutoff]
             Distribution of reads required for top reference for output of candidate profile. Default 0, no cutoff used.
             Range [0,1). custom_postprocessing.AMPS.r option
-
         -e [default read edit ratio]         
             Ratio for default read edit distances. Default: 0.9, strong declining edit distance required. 
             Range [0,1). custom_postprocessing.AMPS.r option
-
         -a [ancient read edit ratio]        
             Ratio for ancient read edit distances. Default:0.8, fairly strong declining edit distance required. 
             Range [0,1). custom_postprocessing.AMPS.r option
-
         -s [sequence type]      
             Paired end or single end for calculating damage cutoff (if it allows damage on either end to satisfy the condition).
             Default SE. Options (SE, PE). custom_postprocessing.AMPS.r option
-
         -t [NUM_THREADS]        
             Number of threads to use, default 1
-
         -S      
             skip rma6-tabuliser
-
         -f
             firm cutoff outputs, output maltextract pdf summary only if all thresholds are exceeded (stp3 files only)
-            custom_postprocessing.AMPS.r option
-        
+            custom_postprocessing.AMPS.r option   
         -h      
             print this help message
-
         -v      
             make execution verbose
-
         -V      
             print version
 
