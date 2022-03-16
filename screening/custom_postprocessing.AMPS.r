@@ -191,7 +191,7 @@ if ( !is.null(opt$ancratio) ) {ancratio <- opt$ancratio} else {ancratio <- 0.8}
 if ( is.null(opt$sequencestrategy) ) {paired_end_mode <- FALSE
 } else if (opt$sequencestrategy =='pe') {paired_end_mode <- TRUE
 } else { paired_end_mode <- FALSE }
-if ( !is.null(opt$firm) ) {firm <- TRUE}
+if ( !is.null(opt$firm) ) {firm <- TRUE} else {firm <- FALSE}
 
 ## check if custom filtering values are acceptable
 if (dmgcutoff < 0 || dmgcutoff > 1) {stop("damage cutoff value should be within range of [0,1]")}
