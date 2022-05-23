@@ -160,6 +160,14 @@ if [ ! "$output" ] || [ ! "$input" ] || [ ! "$nodelist" ]; then
     exit_abnormal
 fi 
 
+## modifying input and output to fullpath if relative
+if [[ $input != /* ]] || ; then
+    input=$(pwd)/$input
+fi
+if [[ $output != /* ]] || ; then
+    input=$(pwd)/$output
+fi
+
 ## declaring needed variables
 anc_runsum=ancient/RunSummary.txt
 def_runsum=default/RunSummary.txt
