@@ -320,8 +320,8 @@ if (!is.null(opt$heatmap.json)) {
 if (length(maltex.mode)==2) {mltexmd <- 'def_anc'} else {mltexmd <- 'default'}
 
 output_parameters_table <- data.frame(
-    variable=c('malt_extract_mode','malt_extract_output_folder','paired_end_mode','node_list','damage_cutoff','read_distribution_cutoff','default_edit_distance_ratio','ancient_edit_distance_ratio'),
-    values=c(mltexmd,opt$rmaex.out.fld,toString(paired_end_mode),opt$node,dmgcutoff,readdistcutoff,defratio,ancratio)
+    variable=c('malt_extract_mode','malt_extract_output_folder','paired_end_mode','node_list','damage_cutoff','read_distribution_cutoff','default_edit_distance_ratio','ancient_edit_distance_ratio','firm_cutoff_for_output'),
+    values=c(mltexmd,opt$rmaex.out.fld,toString(paired_end_mode),opt$node,dmgcutoff,readdistcutoff,defratio,ancratio,firm)
 )
 write.table(output_parameters_table, file = paste(path,"post_processing_parameters.txt",sep=""), sep="\t", row.names=FALSE, col.names=TRUE,quote=FALSE)
 
