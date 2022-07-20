@@ -68,9 +68,9 @@ plot.editDis <- function(id,tax,folders){
     switch <- FALSE
     for (i in 1:length(folders)){
         ## Edit Distance: read data and grep taxon(s) of interest
-        res <- read.table(paste(folders[i],'editDistance/',id,'_editDistance.txt',sep=''),header=F,sep="\t",skip=1,comment.char='',row.names=1)[,1:6] # R does not get the numbers as headers
+        res <- read.table(paste(folders[i],'editDistance/',id,'_editDistance.txt',sep=''),header=F,sep="\t",skip=1,comment.char='',row.names=1)[,1:12] # R does not get the numbers as headers
         rownames(res) <- chartr("><","..",rownames(res)) # Unusual character fix by JFY, based on plot_summary_rmaex_v05
-        colnames(res) <- c('0','1','2','3','4','5')
+        colnames(res) <- c('0','1','2','3','4','5','6','7','8','9','10','>10')
         res <- res[ tax , ]
         mc1 <- c(colorRampPalette(c("lightgreen","darkgreen"))(nrow(res))) # remnant from multiple spec
         barplot(as.matrix(res),beside=T,col=mc1,main=id,xlab=paste("edit distance:",basename(folders[i])),ylab="read count")
