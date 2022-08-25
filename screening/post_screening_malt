@@ -161,10 +161,10 @@ if [ ! "$output" ] || [ ! "$input" ] || [ ! "$nodelist" ]; then
 fi 
 
 ## modifying input and output to fullpath if relative
-if [[ $input != /* ]] || ; then
+if [[ $input != /* ]] ; then
     input=$(pwd)/$input
 fi
-if [[ $output != /* ]] || ; then
+if [[ $output != /* ]] ; then
     input=$(pwd)/$output
 fi
 
