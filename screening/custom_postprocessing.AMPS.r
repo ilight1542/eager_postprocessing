@@ -221,14 +221,14 @@ if(length(maltex.mode) == 2){
     
     ## if firm only output step 3 (all thresholds met), default only needs to satisfy default ratio + read distribution
     if ( firm ) {
-        positions <- data[ data[,'def.dr4'] >= defratio & !is.na(data[,'def.dr4']) & data[,'def.rd'] > readdistcutoff & data[,'def.mapDam'] > dmgcutoff & !is.na(data[,'def.mapDam']) & data[,'anc.dr4'] > ancratio & !is.na(data[,'anc.dr4']), ]
+        positions <- data[ data[,'def.dr4'] >= defratio & !is.na(data[,'def.dr4']) & data[,'def.rd'] >= readdistcutoff & data[,'def.mapDam'] > dmgcutoff & !is.na(data[,'def.mapDam']) & data[,'anc.dr4'] > ancratio & !is.na(data[,'anc.dr4']), ]
         trg1 <- positions
         trg2 <- positions
         trg3 <- positions
     } else {
-        trg1 <- data[ data[,'def.dr4'] >= defratio & !is.na(data[,'def.dr4']) & data[,'def.rd'] > readdistcutoff, ] ## Step1: DiffRatio0-4: > defratio (default = 0.9) and read distribution > cutoff (default = 0)
-        trg2 <- data[ data[,'def.mapDam'] > dmgcutoff & !is.na(data[,'def.mapDam']) & data[,'def.rd'] > readdistcutoff, ] ## Step2: Terminal Damage Present (default = 0) #TODO: fix mapDam cutoff, currently it is ANY position has > cutoff, need first position #maybe C>T_1
-        trg3 <- data[ data[,'anc.dr4'] > ancratio & !is.na(data[,'anc.dr4']) & data[,'def.rd'] > readdistcutoff, ] ## Step3: DiffRatio1-4: > ancratio (default = 0.8)
+        trg1 <- data[ data[,'def.dr4'] >= defratio & !is.na(data[,'def.dr4']) & data[,'def.rd'] >= readdistcutoff, ] ## Step1: DiffRatio0-4: > defratio (default = 0.9) and read distribution > cutoff (default = 0)
+        trg2 <- data[ data[,'def.mapDam'] > dmgcutoff & !is.na(data[,'def.mapDam']) & data[,'def.rd'] >= readdistcutoff, ] ## Step2: Terminal Damage Present (default = 0) #TODO: fix mapDam cutoff, currently it is ANY position has > cutoff, need first position #maybe C>T_1
+        trg3 <- data[ data[,'anc.dr4'] > ancratio & !is.na(data[,'anc.dr4']) & data[,'def.rd'] >= readdistcutoff, ] ## Step3: DiffRatio1-4: > ancratio (default = 0.8)
     }
 
     
@@ -245,8 +245,8 @@ if(length(maltex.mode) == 2){
     }
 } else { 
     ## Default: Extract scores and build matrix
-    trg1 <- data[ data[,'def.dr4'] >= defratio & !is.na(data[,'def.dr4']) & data[,'def.rd'] > readdistcutoff , ] ## Step1: DiffRatio0-4: > defratio (default = 0.9)
-    trg2 <- data[ data[,'def.mapDam'] > dmgcutoff & !is.na(data[,'def.mapDam']) & data[,'def.rd'] > readdistcutoff , ] ## Step2: Terminal Damage Present (default = 0)
+    trg1 <- data[ data[,'def.dr4'] >= defratio & !is.na(data[,'def.dr4']) & data[,'def.rd'] >= readdistcutoff , ] ## Step1: DiffRatio0-4: > defratio (default = 0.9)
+    trg2 <- data[ data[,'def.mapDam'] > dmgcutoff & !is.na(data[,'def.mapDam']) & data[,'def.rd'] >= readdistcutoff , ] ## Step2: Terminal Damage Present (default = 0)
 
     # Build Matrix for Heatmap
     res <- matrix(1L,nrow=length(unq.spec),ncol=length(all.inds),dimnames=list(a=unq.spec,b=all.inds))
@@ -282,15 +282,15 @@ pdf.height <- max(dim(red.res)[1]/2.5,20)
 pdf.width <- max(dim(red.res)[2]/10 , 20)
 pdf(paste(path,'heatmap_overview_Wevid.pdf',sep=""),height=pdf.height,width=pdf.width)
 par(mar=c(5.1,30.1,25.1,2.1))
-if(ncol(red.res)!=0){image(x=1:ncol(red.res),y=1:nrow(red.res),z=t(red.res),col=mycol,axes=F,ylab="",xlab="",zlim=c(1,4))
-	axis(side=2,at=1:nrow(red.res),labels=rownames(red.res),las=1,cex.axis=2)
-	axis(side=3,at=1:ncol(red.res),labels=colnames(red.res),las=2,cex.axis=2,tick=F)
-	abline(h=1:length(rownames(red.res))+0.5,col='darkgrey') # add horizontal lines for improved vision
-	abline(v=1:length(colnames(red.res))+0.5,col='darkgrey') # add vertical lines for improved vision
-	xleg <- ncol(red.res)-(ncol(red.res)*1.35)
-	yleg <- nrow(red.res)+5
-	legend(x=xleg,y=yleg, legend=leg.txt, fill = mycol[-1],xpd=T,cex=3)
-	dev.off()
+image(x=1:ncol(red.res),y=1:nrow(red.res),z=t(red.res),col=mycol,axes=F,ylab="",xlab="",zlim=c(1,4))
+axis(side=2,at=1:nrow(red.res),labels=rownames(red.res),las=1,cex.axis=2)
+axis(side=3,at=1:ncol(red.res),labels=colnames(red.res),las=2,cex.axis=2,tick=F)
+abline(h=1:length(rownames(red.res))+0.5,col='darkgrey') # add horizontal lines for improved vision
+abline(v=1:length(colnames(red.res))+0.5,col='darkgrey') # add vertical lines for improved vision
+xleg <- ncol(red.res)-(ncol(red.res)*1.35)
+yleg <- nrow(red.res)+5
+legend(x=xleg,y=yleg, legend=leg.txt, fill = mycol[-1],xpd=T,cex=3)
+dev.off()
 
 ## Export table format
 red.res.tab <- cbind(rownames(red.res), data.frame(red.res, row.names=NULL))
@@ -315,7 +315,7 @@ if (!is.null(opt$heatmap.json)) {
     ## convert and save list as json
     write_json(red.res.json, path = paste(path,'heatmap_overview_Wevid.json',sep = ""), pretty = T)
 }
-} else { print('No hit with at least a declining edit distance') }
+
 ## Export postprocessing parameters text file
 if (length(maltex.mode)==2) {mltexmd <- 'def_anc'} else {mltexmd <- 'default'}
 
