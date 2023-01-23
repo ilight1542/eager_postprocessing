@@ -165,7 +165,7 @@ if [[ $input != /* ]] ; then
     input=$(pwd)/$input
 fi
 if [[ $output != /* ]] ; then
-    input=$(pwd)/$output
+    output=$(pwd)/$output
 fi
 
 ## declaring needed variables
