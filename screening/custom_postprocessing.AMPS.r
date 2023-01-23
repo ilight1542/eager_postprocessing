@@ -282,15 +282,15 @@ pdf.height <- max(dim(red.res)[1]/2.5,20)
 pdf.width <- max(dim(red.res)[2]/10 , 20)
 pdf(paste(path,'heatmap_overview_Wevid.pdf',sep=""),height=pdf.height,width=pdf.width)
 par(mar=c(5.1,30.1,25.1,2.1))
-image(x=1:ncol(red.res),y=1:nrow(red.res),z=t(red.res),col=mycol,axes=F,ylab="",xlab="",zlim=c(1,4))
-axis(side=2,at=1:nrow(red.res),labels=rownames(red.res),las=1,cex.axis=2)
-axis(side=3,at=1:ncol(red.res),labels=colnames(red.res),las=2,cex.axis=2,tick=F)
-abline(h=1:length(rownames(red.res))+0.5,col='darkgrey') # add horizontal lines for improved vision
-abline(v=1:length(colnames(red.res))+0.5,col='darkgrey') # add vertical lines for improved vision
-xleg <- ncol(red.res)-(ncol(red.res)*1.35)
-yleg <- nrow(red.res)+5
-legend(x=xleg,y=yleg, legend=leg.txt, fill = mycol[-1],xpd=T,cex=3)
-dev.off()
+if(ncol(red.res)!=0){image(x=1:ncol(red.res),y=1:nrow(red.res),z=t(red.res),col=mycol,axes=F,ylab="",xlab="",zlim=c(1,4))
+	axis(side=2,at=1:nrow(red.res),labels=rownames(red.res),las=1,cex.axis=2)
+	axis(side=3,at=1:ncol(red.res),labels=colnames(red.res),las=2,cex.axis=2,tick=F)
+	abline(h=1:length(rownames(red.res))+0.5,col='darkgrey') # add horizontal lines for improved vision
+	abline(v=1:length(colnames(red.res))+0.5,col='darkgrey') # add vertical lines for improved vision
+	xleg <- ncol(red.res)-(ncol(red.res)*1.35)
+	yleg <- nrow(red.res)+5
+	legend(x=xleg,y=yleg, legend=leg.txt, fill = mycol[-1],xpd=T,cex=3)
+	dev.off()
 
 ## Export table format
 red.res.tab <- cbind(rownames(red.res), data.frame(red.res, row.names=NULL))
