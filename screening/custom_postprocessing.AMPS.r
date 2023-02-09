@@ -257,8 +257,8 @@ if(length(maltex.mode) == 2){
             res[ trg3[p,'spec']  , trg3[p,'id'] ] <- 3
         }
     }
-
 }
+print('data parsing OK')
 
 ##############
 ## Plot heatmap
@@ -291,7 +291,7 @@ if(ncol(red.res)!=0){image(x=1:ncol(red.res),y=1:nrow(red.res),z=t(red.res),col=
 	yleg <- nrow(red.res)+5
 	legend(x=xleg,y=yleg, legend=leg.txt, fill = mycol[-1],xpd=T,cex=3)
 	dev.off()
-
+}
 ## Export table format
 red.res.tab <- cbind(rownames(red.res), data.frame(red.res, row.names=NULL))
 colnames(red.res.tab)[1] <- "node"
