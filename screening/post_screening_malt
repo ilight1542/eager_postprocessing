@@ -224,7 +224,7 @@ else
 fi
 
 ## runnning james' rma tabuliser
-if [[ $skip == false ]]; then
+if [[ $skip == true ]]; then
     mkdir -p ${output}/rma6_collection
     cp ${input}/*/results/metagenomic_classification/malt/*.rma6 ${output}/rma6_collection
     rma-tabuliser -d ${output}/rma6_collection -t ${threads} -n
