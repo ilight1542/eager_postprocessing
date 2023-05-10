@@ -13,7 +13,7 @@ anceditdist="0.1"
 seqtype="SE"
 skip=false
 firm=false
-threads=1
+threads="1"
 
 
 ## functions
