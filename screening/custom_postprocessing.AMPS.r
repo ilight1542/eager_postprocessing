@@ -172,8 +172,8 @@ spec = matrix(c(
     "reads" ,   "b" , 2, "double", "Minimum number of reads on node to output",
     "dmgcutoff" ,   "d" ,   2,  "double",  "Cutoff threshold for 3 prime damage for outputting plot. Default: 0, no cutoff is used",
     "readdistcutoff","c", 2,  "double",  "Cutoff threshold for read distribution (stacking) for outputting plot. Default: 0, no cutoff is used",
-    "defratio"  ,   "e", 2, "double", "Absolute value sums of edit distances of ratio between successive bars of default edit distance needed to exceed for outputting plot, lower value is more permissive. Default: 0.9",
-    "ancratio"  ,   "a",    2,  "double", "Ratio between successive bars of ancient edit distance needed to exceed for outputting plot, lower value is more permissive. Default: 0.8",
+    "defratio"  ,   "e", 2, "double", "Minimum ratio of value sums of edit distances between successive bars of default edit distance needed for candidate taxon on a given sample to pass threshold, lower value is more permissive. Default: 0.9",
+    "ancratio"  ,   "a",    2,  "double", "Minimum ratio of value sums of edit distances between successive bars of ancient edit distance needed for candidate taxon on a given sample to pass threshold, lower value is more permissive. Default: 0.8",
     "firm"  , "f", 0, "logical", "Use firm cutoffs, only output if all thresholds met for outputting plots, eg dmg, read dist, def ratio and anc ratio",
     "outputall", "o", 0, "logical", "Output all pdfs of sample x node any with reads above threshold (default threshold is 1 read)"
 ), byrow=TRUE, ncol=5);
@@ -261,14 +261,14 @@ if ( outputall ) {
         ## Default-Ancient
         ## if firm only output step 3 (all thresholds met), default only needs to satisfy default ratio + read distribution
         if ( firm ) {
-            positions <- data[ data[,'reads_all'] >= reads_threshold & data[,'def.dr4'] >= defratio & !is.na(data[,'def.dr4']) & data[,'def.rd'] >= readdistcutoff & data[,'def.mapDam'] > dmgcutoff & !is.na(data[,'def.mapDam']) & data[,'anc.dr4'] > ancratio & !is.na(data[,'anc.dr4']), ]
+            positions <- data[ data[,'reads_all'] >= reads_threshold & data[,'def.dr4'] >= defratio & !is.na(data[,'def.dr4']) & data[,'def.rd'] >= readdistcutoff & data[,'def.mapDam'] >= dmgcutoff & !is.na(data[,'def.mapDam']) & data[,'anc.dr4'] >= ancratio & !is.na(data[,'anc.dr4']), ]
             trg1 <- positions
             trg2 <- positions
             trg3 <- positions
         } else {
             trg1 <- data[ data[,'reads_all'] >= reads_threshold & data[,'def.dr4'] >= defratio & !is.na(data[,'def.dr4']) & data[,'def.rd'] >= readdistcutoff, ] ## Step1: DiffRatio0-4: > defratio (default = 0.9) and read distribution > cutoff (default = 0)
-            trg2 <- data[ data[,'def.mapDam'] > dmgcutoff & !is.na(data[,'def.mapDam']) & data[,'def.rd'] >= readdistcutoff, ] ## Step2: Terminal Damage Present (default = 0)
-            trg3 <- data[ data[,'anc.dr4'] > ancratio & !is.na(data[,'anc.dr4']) & data[,'def.rd'] >= readdistcutoff, ] ## Step3: DiffRatio1-4: > ancratio (default = 0.8)
+            trg2 <- data[ data[,'def.mapDam'] >= dmgcutoff & !is.na(data[,'def.mapDam']) & data[,'def.rd'] >= readdistcutoff, ] ## Step2: Terminal Damage Present (default = 0)
+            trg3 <- data[ data[,'anc.dr4'] >= ancratio & !is.na(data[,'anc.dr4']) & data[,'def.rd'] >= readdistcutoff, ] ## Step3: DiffRatio1-4: > ancratio (default = 0.8)
         }
 
 
@@ -286,7 +286,7 @@ if ( outputall ) {
     } else {
         ## Default: Extract scores and build matrix
         trg1 <- data[ data[,'reads_all'] >= reads_threshold & data[,'def.dr4'] >= defratio & !is.na(data[,'def.dr4']) & data[,'def.rd'] >= readdistcutoff , ] ## Step1: DiffRatio0-4: > defratio (default = 0.9)
-        trg2 <- data[ data[,'def.mapDam'] > dmgcutoff & !is.na(data[,'def.mapDam']) & data[,'def.rd'] >= readdistcutoff , ] ## Step2: Terminal Damage Present (default = 0)
+        trg2 <- data[ data[,'def.mapDam'] >= dmgcutoff & !is.na(data[,'def.mapDam']) & data[,'def.rd'] >= readdistcutoff , ] ## Step2: Terminal Damage Present (default = 0)
 
         # Build Matrix for Heatmap
         res <- matrix(1L,nrow=length(unq.spec),ncol=length(all.inds),dimnames=list(a=unq.spec,b=all.inds))
