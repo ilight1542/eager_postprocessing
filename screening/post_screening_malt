@@ -1,151 +1,100 @@
-#! /usr/bin/env bash
+#!/usr/bin/env bash
 
-## run inside the directory containing all the loop iterations (eg subdirs of 1,2,3,..100,101,..)
-
-## defaults, will be overwritten if redefined in options parsing
-script_name=$(basename $0)
-prog_version=0.1.0
-
-dmgcutoff="0"
-readdistcutoff="0"
-defeditdist="0.9"
-anceditdist="0.1"
-seqtype="SE"
-skip=false
+# Set default values
+output_dir=""
+input_path=""
+node_file=""
+reads="1"
+damage_cutoff="0"
+read_dist_cutoff="0"
+default_edit_dist="0.9"
+ancient_edit_dist="0.1"
+sequence_type="SE"
+num_threads="1"
 firm=false
-threads="1"
+skip=false
 
-
-## functions
-
-usage() {                                 # Function: Print a help message.
-  printf "Usage: $script_name [-O <OUTPUT DIR>] [-I </path/to/folder/with/eager/loops> ] [-n </path/to/malt/flagging/list.txt>, see postprocessing.AMPS ] [-d <damage cutoff on first/last read>, see postprocessing.AMPS] [-e <default read ratio>, see postprocessing.AMPS] [-a <ancient read ratio>, see postprocessing.AMPS] [-s <Sequencing strategy (PE vs SE)>, see postprocessing.AMPS] [-t <NUM_THREADS>] -h(elp) -v(erbose) -V(ersion)" 1>&2 
-  # Will make output NEXT to rma6 file supplying -r will only export major ranks
+# Function to display usage information
+usage() {
+  echo "Usage: $0 [-O <OUTPUT DIR>] [-I <INPUT PATH>] [-n <NODE FILE>] [-b <MIN READS>] [-d <DAMAGE CUTOFF>] [-i <READ DIST CUTOFF>] [-e <DEFAULT EDIT DIST>] [-a <ANCIENT EDIT DIST>] [-s <SEQUENCE TYPE>] [-t <NUM THREADS>] [-F] [-S]"
 }
 
-exit_abnormal() {
-    usage
-    exit 1
-}
-
-help() {
-    printf "
-    $(basename ${script_name^^})
-    NAME
-      
-    $script_name - collect parallelized eager runs and postprocess/reanalyse malt(extract) outputs 
-    SYNOPSIS
-      
-    $script_name [-O <OUTPUT DIR>] [-I </path/to/folder/with/eager/loops> ] [OPTIONAL ARGUMENTS]...
-
-    DESCRIPTION
-
-        $script_name is a bash script that collects and reanalyses outputs from parallelized nf-core/eager runs when malt/maltextract is ran.
-        Additionally, James Fellows Yates' rma-tabuliser is ran. Optional arguments modify malt-extract postprocessing scripts to output summary pdfs of candidate hits.
-
-        Requires (from rma-tabuliser): MEGAN (>= v6.21.7) to be installed on your system, and the contents of the tools/ directory (in the 
-        MEGAN installation path) to be in your \$PATH. (Tip: the bioconda version of MEGAN puts these tools already in 
-        your path). rma-tabuliser in your \$PATH variable (from https://github.com/jfy133/rma-tabuliser/blob/main/rma-tabuliser)
-        Requires (from custom_postprocessing.AMPS.r): R (tested on version 3.3.1 +), R libraries: parallel, getopt, gridBase, gridExtra Optional: R libraries: jsonlite (if you want generate json-formatted raw heatmap data)
-
-        All requirements filled by custom yaml for unix systems (see https://github.com/ilight1542/eager_postprocessing/tree/main/screening)
-    
-    OPTIONS
-
-        Mandatory:
-
-        -O [PATH]       
-            Output directory for summary files, and malt-extract reanalysis, will create the path if not present already
-        -I [PATH]       
-            Input path to (parallel) eager processing, eg where to find files to reanalyze/summarize
-            essentially at least one level above /results/.. directory from eager output
-            parallel eager processes should be \$I/[run 1, 2, 3...]/results
-        -n [file PATH]      
-            path to node file for malt-extract; List (\\n separated) of nodes to be reported on (aka input species/node list used for MALTextract). 
-            custom_postprocessing.AMPS.r option
-        
-        Optional:
-
-        -d [damage cutoff]      
-            Cutoff threshold for end of read damage for outputting plot. 
-            Default: 0, no cutoff is used. Range [0,1). custom_postprocessing.AMPS.r option
-        -i [read distribution cutoff]
-            Distribution of reads required for top reference for output of candidate profile. Default 0, no cutoff used.
-            Range [0,1). custom_postprocessing.AMPS.r option
-        -e [default read edit ratio]         
-            Ratio for default read edit distances. Default: 0.9, strong declining edit distance required. 
-            Range [0,1). custom_postprocessing.AMPS.r option
-        -a [ancient read edit ratio]        
-            Ratio for ancient read edit distances. Default:0.8, fairly strong declining edit distance required. 
-            Range [0,1). custom_postprocessing.AMPS.r option
-        -s [sequence type]      
-            Paired end or single end for calculating damage cutoff (if it allows damage on either end to satisfy the condition).
-            Default SE. Options (SE, PE). custom_postprocessing.AMPS.r option
-        -t [NUM_THREADS]        
-            Number of threads to use, default 1
-        -S      
-            skip rma6-tabuliser
-        -f
-            firm cutoff outputs, output maltextract pdf summary only if all thresholds are exceeded (stp3 files only)
-            custom_postprocessing.AMPS.r option   
-        -h      
-            print this help message
-        -v      
-            make execution verbose
-        -V      
-            print version
-
-    AUTHOR
-        
-        Ian Light (ilight1542@gmail.com), rma-tabuliser: James A. Fellows Yates (jfy133@gmail.com)
-
-    VERSION
-
-        $prog_version
-    \n    
-    "
-}
-
-## argument parsing ## 
-while getopts ":O:I:n:d:i:e:a:s:tfShvV" options; do         # Loop: Get the next option;
-                                          # use silent error checking
-  case "${options}" in                    # 
-    O)output=${OPTARG%%/};;
-    I)input=${OPTARG%%/};;
-    n)nodelist=${OPTARG};;
-    d)dmgcutoff=${OPTARG};;
-    i)readdistcutoff=${OPTARG};;
-    e)defeditdist=${OPTARG};;
-    a)anceditdist=${OPTARG};;
-    s)seqtype=${OPTARG};;
-    t)threads=${OPTARG};;
-    f)firm=true;;
-    S)skip=true;;
-    v)version=true;;
-    V)verbose="-v";;
-    h)help=true;;
-    :)                                    # If expected argument omitted:
-      echo "Error: -${OPTARG} requires an argument."
-      exit_abnormal                       # Exit abnormally.
+# Parse command-line options
+while getopts "O:I:n:b:d:i:e:a:s:t:FSh" opt; do
+  case $opt in
+    O)
+      output_dir=$OPTARG
       ;;
-    *)                                    # If unknown (any other) option:
-      exit_abnormal                       # Exit abnormally.
+    I)
+      input_path=$OPTARG
+      ;;
+    n)
+      node_file=$OPTARG
+      ;;
+    b)
+      reads=$OPTARG
+      ;;
+    d)
+      damage_cutoff=$OPTARG
+      ;;
+    i)
+      read_dist_cutoff=$OPTARG
+      ;;
+    e)
+      default_edit_dist=$OPTARG
+      ;;
+    a)
+      ancient_edit_dist=$OPTARG
+      ;;
+    s)
+      sequence_type=$OPTARG
+      ;;
+    t)
+      num_threads=$OPTARG
+      ;;
+    F)
+      firm=true
+      ;;
+    S)
+      skip=true
+      ;;
+    v)
+      version=true
+      ;;
+    h)
+      usage
+      exit 0
+      ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      usage
+      exit 1
       ;;
   esac
 done
 
-
-## validation ##
-
-if [[ $version == true ]]; then
-  printf $prog_version
-  exit 0
+# Validate the required options
+if [[ -z $output_dir || -z $input_path ]]; then
+  echo "Output directory (-O) and input path (-I) are required options." >&2
+  usage
+  exit 1
 fi
 
-if [[ $OPTIND -eq 1 ]]; then echo "No options were passed!" && exit_abnormal; fi
-shift $((OPTIND-1))
+# Use the parsed options as needed
+echo "Output Directory: $output_dir"
+echo "Input Path: $input_path"
+echo "Node File: $node_file"
+echo "Read Required: $reads"
+echo "Damage Cutoff: $damage_cutoff"
+echo "Read Dist Cutoff: $read_dist_cutoff"
+echo "Default Edit Dist: $default_edit_dist"
+echo "Ancient Edit Dist: $ancient_edit_dist"
+echo "Sequence Type: $sequence_type"
+echo "Num Threads: $num_threads"
+echo "Firm: $firm"
+echo "Skip: $skip"
 
-if [[ $help == true ]]; then help && exit 0; fi
+## validation of environment ##
 
 if ! command -v rma2info &> /dev/null
 then
@@ -153,19 +102,13 @@ then
     exit
 fi
 
-# mandatory args
-if [ ! "$output" ] || [ ! "$input" ] || [ ! "$nodelist" ]; then
-    echo "output directory, input directory, and node list for malt extract are all madatory options"
-    echo "please provide these using -O, -I, and -n; respectively"
-    exit_abnormal
-fi 
-
 ## modifying input and output to fullpath if relative
-if [[ $input != /* ]] ; then
-    input=$(pwd)/$input
+if [[ $input_path != /* ]] ; then
+    input_path=$(pwd)/$input_path
 fi
-if [[ $output != /* ]] ; then
-    output=$(pwd)/$output
+
+if [[ $output_dir != /* ]] ; then
+    output_dir=$(pwd)/$output_dir
 fi
 
 ## declaring needed variables
@@ -176,61 +119,61 @@ def_totalcount=default/TotalCount.txt
 
 ## creating output directory structure
 
-mkdir -p ${output}/ancient/coverage/
-mkdir -p ${output}/ancient/damageMismatch/
-mkdir -p ${output}/ancient/editDistance/
-mkdir -p ${output}/ancient/filterInformation/
-mkdir -p ${output}/ancient/readDist/
-mkdir -p ${output}/ancient/percentIdentity/
-mkdir -p ${output}/default/coverage/
-mkdir -p ${output}/default/damageMismatch/
-mkdir -p ${output}/default/editDistance/
-mkdir -p ${output}/default/filterInformation/
-mkdir -p ${output}/default/readDist/
-mkdir -p ${output}/default/percentIdentity/
+mkdir -p ${output_dir}/ancient/coverage/
+mkdir -p ${output_dir}/ancient/damageMismatch/
+mkdir -p ${output_dir}/ancient/editDistance/
+mkdir -p ${output_dir}/ancient/filterInformation/
+mkdir -p ${output_dir}/ancient/readDist/
+mkdir -p ${output_dir}/ancient/percentIdentity/
+mkdir -p ${output_dir}/default/coverage/
+mkdir -p ${output_dir}/default/damageMismatch/
+mkdir -p ${output_dir}/default/editDistance/
+mkdir -p ${output_dir}/default/filterInformation/
+mkdir -p ${output_dir}/default/readDist/
+mkdir -p ${output_dir}/default/percentIdentity/
 
 ## collecting files
-for i in ${input}/*/results/maltextract/results/
+for i in ${input_path}/*/results/maltextract/results/
     do
-    cp ${i}/ancient/coverage/*.txt ${output}/ancient/coverage/
-    cp ${i}/ancient/damageMismatch/*.txt ${output}/ancient/damageMismatch/
-    cp ${i}/ancient/editDistance/*.txt ${output}/ancient/editDistance/
-    cp ${i}/ancient/filterInformation/*.txt ${output}/ancient/filterInformation/
-    cp ${i}/ancient/percentIdentity/*.txt ${output}/ancient/percentIdentity/
-    cp ${i}/ancient/readDist/*.txt ${output}/ancient/readDist/
-    cp ${i}/default/coverage/*.txt ${output}/default/coverage/
-    cp ${i}/default/damageMismatch/*.txt ${output}/default/damageMismatch/
-    cp ${i}/default/editDistance/*.txt ${output}/default/editDistance/
-    cp ${i}/default/filterInformation/*.txt ${output}/default/filterInformation/
-    cp ${i}/default/percentIdentity/*.txt ${output}/default/percentIdentity/
-    cp ${i}/default/readDist/*.txt ${output}/default/readDist/
+    cp ${i}/ancient/coverage/*.txt ${output_dir}/ancient/coverage/
+    cp ${i}/ancient/damageMismatch/*.txt ${output_dir}/ancient/damageMismatch/
+    cp ${i}/ancient/editDistance/*.txt ${output_dir}/ancient/editDistance/
+    cp ${i}/ancient/filterInformation/*.txt ${output_dir}/ancient/filterInformation/
+    cp ${i}/ancient/percentIdentity/*.txt ${output_dir}/ancient/percentIdentity/
+    cp ${i}/ancient/readDist/*.txt ${output_dir}/ancient/readDist/
+    cp ${i}/default/coverage/*.txt ${output_dir}/default/coverage/
+    cp ${i}/default/damageMismatch/*.txt ${output_dir}/default/damageMismatch/
+    cp ${i}/default/editDistance/*.txt ${output_dir}/default/editDistance/
+    cp ${i}/default/filterInformation/*.txt ${output_dir}/default/filterInformation/
+    cp ${i}/default/percentIdentity/*.txt ${output_dir}/default/percentIdentity/
+    cp ${i}/default/readDist/*.txt ${output_dir}/default/readDist/
 done
 
-## collapsing files 
-python3 ~/bin/merge_summary_maltextract.py -i ${input}/*/results/maltextract/results/${anc_runsum} -o RunSummary.txt
-mv RunSummary.txt ${output}/ancient/
-python3 ~/bin/merge_summary_maltextract.py -i ${input}/*/results/maltextract/results/${def_runsum} -o RunSummary.txt
-mv RunSummary.txt ${output}/default/
-python3 ~/bin/merge_summary_maltextract.py -i ${input}/*/results/maltextract/results/${anc_totalcount} -o TotalCount.txt
-mv TotalCount.txt ${output}/ancient/
-python3 ~/bin/merge_summary_maltextract.py -i ${input}/*/results/maltextract/results/${def_totalcount} -o TotalCount.txt
-mv TotalCount.txt ${output}/default/
+## collapsing files
+python3 ~/bin/merge_summary_maltextract.py -i ${input_path}/*/results/maltextract/results/${anc_runsum} -o RunSummary.txt
+mv RunSummary.txt ${output_dir}/ancient/
+python3 ~/bin/merge_summary_maltextract.py -i ${input_path}/*/results/maltextract/results/${def_runsum} -o RunSummary.txt
+mv RunSummary.txt ${output_dir}/default/
+python3 ~/bin/merge_summary_maltextract.py -i ${input_path}/*/results/maltextract/results/${anc_totalcount} -o TotalCount.txt
+mv TotalCount.txt ${output_dir}/ancient/
+python3 ~/bin/merge_summary_maltextract.py -i ${input_path}/*/results/maltextract/results/${def_totalcount} -o TotalCount.txt
+mv TotalCount.txt ${output_dir}/default/
 
 ## running custom_postprocessing, defaults are defined at top of script, if not given in standard input
-if [[ ${firm} == false ]]; then
-    custom_postprocessing.AMPS.r -r ${output} -n ${nodelist} -t ${threads} -m def_anc -d ${dmgcutoff} -c ${readdistcutoff} -e ${defeditdist} -a ${anceditdist} -s ${seqtype}
+if [[ ${firm} ]]; then
+    custom_postprocessing.AMPS.r -r ${output_dir} -n ${node_file} -t ${num_threads} -m def_anc -b ${reads} -d ${damage_cutoff} -c ${read_dist_cutoff} -e ${default_edit_dist} -a ${ancient_edit_dist} -s ${sequence_type} -f
 else
-    custom_postprocessing.AMPS.r -r ${output} -n ${nodelist} -t ${threads} -m def_anc -d ${dmgcutoff} -c ${readdistcutoff} -e ${defeditdist} -a ${anceditdist} -s ${seqtype} -f
+    custom_postprocessing.AMPS.r -r ${output_dir} -n ${node_file} -t ${num_threads} -m def_anc -b ${reads} -d ${damage_cutoff} -c ${read_dist_cutoff} -e ${default_edit_dist} -a ${ancient_edit_dist} -s ${sequence_type}
 fi
 
 ## runnning james' rma tabuliser
 if [[ $skip != true ]]; then
     echo "running rma6 tabuliser from JFY"
-    mkdir -p ${output}/rma6_collection
-    cp ${input}/*/results/metagenomic_classification/malt/*.rma6 ${output}/rma6_collection
-    rma-tabuliser -d ${output}/rma6_collection -t ${threads} -n
+    mkdir -p ${output_dir}/rma6_collection
+    cp ${input_path}/*/results/metagenomic_classification/malt/*.rma6 ${output_dir}/rma6_collection
+    rma-tabuliser -d ${output_dir}/rma6_collection -t ${num_threads} -n
     ## clean copied rma6 files
-    mv ${output}/rma6_collection/count_table.tsv ${output}/count_table.tsv
-    rm -r ${output}/rma6_collection
+    mv ${output_dir}/rma6_collection/count_table.tsv ${output_dir}/count_table.tsv
+    rm -r ${output_dir}/rma6_collection
 fi
 exit 0
